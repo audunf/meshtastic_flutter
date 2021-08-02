@@ -52,15 +52,20 @@ class _MeshtasticHomePageState extends State<MeshtasticHomePage> {
   Bluetooth bt = Bluetooth();
 
   _MeshtasticHomePageState() {
-    bt.addListener(bluetoothListener);
-    bt.setupBluetooth();
   }
 
   bluetoothListener() {
+    var inProgress = false;
+
     var state = bt.getState();
     print("bluetoothListener: $state");
     if (state == BleStatus.ready) {
-      bt.scanForDevices();
+      bt.scanForDevices((deviceId) async {
+        if (inProgress == false) {
+          bt.connect(deviceId);
+          inProgress = true;
+        }
+      });
     }
   }
 
@@ -72,6 +77,9 @@ class _MeshtasticHomePageState extends State<MeshtasticHomePage> {
       // _counter without calling setState(), then the build method would not be
       // called again, and so nothing would appear to happen.
       _counter++;
+
+      bt.addListener(bluetoothListener);
+      bt.setupBluetooth();
     });
   }
 
