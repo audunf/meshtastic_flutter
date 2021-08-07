@@ -9,6 +9,13 @@ import 'bluetooth/ble_device_interactor.dart';
 import 'bluetooth/ble_scanner.dart';
 import 'bluetooth/ble_status_monitor.dart';
 
+import 'screen/channel_screen.dart';
+import 'screen/chat_screen.dart';
+import 'screen/map_screen.dart';
+import 'screen/people_screen.dart';
+import 'screen/settings_screen.dart';
+
+
 const _themeColor = Colors.blue;
 
 void main() {
@@ -68,12 +75,12 @@ class MeshtasticApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Mshtstic',
+      title: 'Meshtastic',
       color: _themeColor,
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: MeshtasticHomePage(title: 'Meshtastic Homepage'),
+      home: MeshtasticHomePage(title: 'Meshtastic'),
     );
   }
 }
@@ -89,37 +96,22 @@ class MeshtasticHomePage extends StatefulWidget {
 
 class _MeshtasticHomePageState extends State<MeshtasticHomePage> {
   Bluetooth bt = Bluetooth();
-  int _selectedIndex = 0;
+  int _currentTabIndex = 0;
 
   _MeshtasticHomePageState();
 
-  static const TextStyle optionStyle = TextStyle(fontSize: 30, fontWeight: FontWeight.bold);
-  static const List<Widget> _widgetOptions = <Widget>[
-    Text(
-      'Index 0: Chat',
-      style: optionStyle,
-    ),
-    Text(
-      'Index 1: People',
-      style: optionStyle,
-    ),
-    Text(
-      'Index 2: Map',
-      style: optionStyle,
-    ),
-    Text(
-      'Index 3: Channel',
-      style: optionStyle,
-    ),
-    Text(
-      'Index 4: Settings',
-      style: optionStyle,
-    ),
+  static final TextStyle _optionStyle = TextStyle(fontSize: 30, fontWeight: FontWeight.bold);
+  final List<Widget> _tabs = <Widget>[
+    ChatScreen(),
+    PeopleScreen(),
+    MapScreen(),
+    ChannelScreen(),
+    SettingsScreen(),
   ];
 
   void _onItemTapped(int index) {
     setState(() {
-      _selectedIndex = index;
+      _currentTabIndex = index;
     });
 
     //bt.addListener(bluetoothListener);
@@ -150,7 +142,7 @@ class _MeshtasticHomePageState extends State<MeshtasticHomePage> {
         title: Text(widget.title),
       ),
       body: Center(
-        child: _widgetOptions.elementAt(_selectedIndex),
+        child: _tabs.elementAt(_currentTabIndex),
       ),
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
@@ -175,7 +167,7 @@ class _MeshtasticHomePageState extends State<MeshtasticHomePage> {
             label: 'Settings',
           ),
         ],
-        currentIndex: _selectedIndex,
+        currentIndex: _currentTabIndex,
         selectedItemColor: Colors.amber[800],
         unselectedItemColor: Colors.grey[400],
         onTap: _onItemTapped,
