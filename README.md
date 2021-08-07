@@ -1,5 +1,48 @@
 # meshtastic_flutter
 
+# components
+AppBar - top bar
+BottomNavigationBar 
+
+# TODO 
+ TODO list:
+ Create a very rudimentary main UI. Tabs: Chat, People, Map, Channels, Settings
+ Main header: Cloud status icon.
+ Settings tab:
+   Combo-box showing BT devices
+     When BT device has been selected, display device details:
+       * Set "Your name"
+       * Region
+ Chat:
+    Not quite sure how it works with multiple channels active?
+    Displays message, cloud icon, date/time, text
+ People:
+    Display name, battery, time since node last visible, GPS coordinates
+ Map:
+    Display map with name and distance. Can probably use a marker here? For the actual position?
+ Channel config:
+    Select channel options (long-slow, etc.)
+    Set channel name.
+    Display the QR code with channel/encryption settings.
+    Allow sharing of channel settings
+    Interpret channel settings
+
+- handle disconnects too
+- make a proper state machine?
+- do something more sensible than "ChangeNotifier" with the state...
+
+Sequence will be:
+1. application scans for available devices
+2. User selects a device
+3. Download the NodeDB database
+  
+
+# State handling
+Overview of options: https://flutter.dev/docs/development/data-and-backend/state-mgmt/options
+
+The recommended way these days: is "Provider":
+Example: https://github.com/flutter/samples/blob/master/provider_counter/lib/main.dart
+
 # Protobuf
 * Flutter protobufs: https://xinyitao.tech/2019/01/12/Using-Protobuf-In-Flutter/ - https://www.andrew.cmu.edu/user/xinyit/2019/01/12/Using-Protobuf-In-Flutter/
 

@@ -3,6 +3,7 @@ import 'package:meshtastic_flutter/proto-autogen/mesh.pb.dart';
 import 'package:meshtastic_flutter/proto-autogen/portnums.pb.dart';
 
 class FromRadioParser {
+  FromRadioParser();
 
   handleFromRadio(dataBuffer) {
     FromRadio fr = FromRadio.fromBuffer(dataBuffer);

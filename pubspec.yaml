@@ -32,6 +32,8 @@ dependencies:
   uuid: ^3.0.4
   permission_handler: ^8.1.4+2
   protobuf: any
+  provider: ^5.0.0
+  logger: ^1.0.0
 
 dev_dependencies:
   flutter_test:
