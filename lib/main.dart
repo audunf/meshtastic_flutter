@@ -1,28 +1,45 @@
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
-import 'package:meshtastic_flutter/bluetooth.dart';
 
 import 'bluetooth/ble_device_connector.dart';
 import 'bluetooth/ble_device_interactor.dart';
 import 'bluetooth/ble_scanner.dart';
 import 'bluetooth/ble_status_monitor.dart';
 
+import 'model/settings_model.dart';
 import 'screen/channel_screen.dart';
 import 'screen/chat_screen.dart';
 import 'screen/map_screen.dart';
 import 'screen/people_screen.dart';
 import 'screen/settings_screen.dart';
 
-
 const _themeColor = Colors.blue;
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  final _logger = Logger();
+  Map<Permission, PermissionStatus> statuses = await [
+  Permission.bluetooth,
+      Permission.location,
+  ].request();
+  print("Permission status: " + statuses[Permission.location].toString());
 
+  final _logger = Logger(
+      filter: null, // Use the default LogFilter (-> only log in debug mode)
+      output: null, // Use the default LogOutput (-> send everything to console);
+      printer: PrettyPrinter(
+          methodCount: 0, // number of method calls to be displayed
+          errorMethodCount: 8, // number of method calls if stacktrace is provided
+          lineLength: 120, // width of the output
+          colors: true, // Colorful log messages
+          printEmojis: true, // Print an emoji for each log message
+          printTime: false // Should each log print contain a timestamp
+      ),
+  );
+  final _settings = SettingsModel();
   final _ble = FlutterReactiveBle();
   final _scanner = BleScanner(ble: _ble, logMessage: _logger.i);
   final _monitor = BleStatusMonitor(_ble);
@@ -41,19 +58,20 @@ void main() {
 
   runApp(MultiProvider(
     providers: [
-      Provider.value(value: _scanner),
+      ChangeNotifierProvider.value(value: _settings),
       Provider.value(value: _monitor),
       Provider.value(value: _connector),
       Provider.value(value: _serviceDiscoverer),
       Provider.value(value: _logger),
-      StreamProvider<BleScannerState?>(
+      Provider.value(value: _scanner),
+      StreamProvider<BleScannerState>(
         create: (_) => _scanner.state,
         initialData: const BleScannerState(
           discoveredDevices: [],
           scanIsInProgress: false,
         ),
       ),
-      StreamProvider<BleStatus?>(
+      StreamProvider<BleStatus>(
         create: (_) => _monitor.state,
         initialData: BleStatus.unknown,
       ),
@@ -79,6 +97,12 @@ class MeshtasticApp extends StatelessWidget {
       color: _themeColor,
       theme: ThemeData(
         primarySwatch: Colors.blue,
+        brightness: Brightness.light,
+      ),
+      darkTheme: ThemeData(
+        primarySwatch: Colors.deepPurple,
+        accentColor: Colors.deepPurple,
+        brightness: Brightness.dark,
       ),
       home: MeshtasticHomePage(title: 'Meshtastic'),
     );
@@ -95,8 +119,7 @@ class MeshtasticHomePage extends StatefulWidget {
 }
 
 class _MeshtasticHomePageState extends State<MeshtasticHomePage> {
-  Bluetooth bt = Bluetooth();
-  int _currentTabIndex = 0;
+  int _currentTabIndex = 4;
 
   _MeshtasticHomePageState();
 
@@ -118,6 +141,7 @@ class _MeshtasticHomePageState extends State<MeshtasticHomePage> {
     //bt.setupBluetooth();
   }
 
+  /*
   bluetoothListener() {
     var inProgress = false;
 
@@ -132,6 +156,7 @@ class _MeshtasticHomePageState extends State<MeshtasticHomePage> {
       });
     }
   }
+   */
 
   @override
   Widget build(BuildContext context) {

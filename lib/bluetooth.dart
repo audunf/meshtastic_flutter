@@ -7,7 +7,7 @@ import 'package:meshtastic_flutter/proto-autogen/portnums.pb.dart';
 import 'package:meshtastic_flutter/proto-autogen/mesh.pb.dart';
 import 'package:meshtastic_flutter/protocol/to_radio.dart';
 import 'package:meshtastic_flutter/protocol/from_radio_parser.dart';
-import 'package:meshtastic_flutter/constant.dart' as Constant;
+import 'package:meshtastic_flutter/constants.dart' as Constant;
 
 
 class Bluetooth extends ChangeNotifier {
@@ -23,7 +23,7 @@ class Bluetooth extends ChangeNotifier {
   }
 
   getCharacteristic(deviceIdParam, characteristicIdParam) {
-    return QualifiedCharacteristic(serviceId: Constant.serviceId, characteristicId: characteristicIdParam, deviceId: deviceIdParam);
+    return QualifiedCharacteristic(serviceId: Constant.meshtasticServiceId, characteristicId: characteristicIdParam, deviceId: deviceIdParam);
   }
 
   setupBluetooth() async {
@@ -47,7 +47,7 @@ class Bluetooth extends ChangeNotifier {
   }
 
   scanForDevices(callback) async {
-    ble.scanForDevices(withServices: <Uuid>[Constant.serviceId], scanMode: ScanMode.balanced).listen((devices) async {
+    ble.scanForDevices(withServices: <Uuid>[Constant.meshtasticServiceId], scanMode: ScanMode.balanced).listen((devices) async {
       //print('scan result: ' + devices.toString());
       callback(devices.id);
     }, onError: (error) {

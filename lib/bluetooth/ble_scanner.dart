@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
 import 'package:meshtastic_flutter/bluetooth/reactive_state.dart';
 import 'package:meta/meta.dart';
@@ -14,18 +15,19 @@ class BleScannerState {
   final bool scanIsInProgress;
 }
 
-
 class BleScanner implements ReactiveState<BleScannerState> {
-  BleScanner({
-    required FlutterReactiveBle ble,
-    required Function(String message) logMessage,
-  })  : _ble = ble,
-        _logMessage = logMessage;
-
   final FlutterReactiveBle _ble;
   final void Function(String message) _logMessage;
   final StreamController<BleScannerState> _stateStreamController = StreamController();
   final _devices = <DiscoveredDevice>[];
+
+  BleScanner({
+    required FlutterReactiveBle ble,
+    required Function(String message) logMessage,
+  })  : _ble = ble,
+        _logMessage = logMessage {
+    _logMessage("*** BleScanner::ctor");
+  }
 
   @override
   Stream<BleScannerState> get state => _stateStreamController.stream;
@@ -56,7 +58,7 @@ class BleScanner implements ReactiveState<BleScannerState> {
   }
 
   Future<void> stopScan() async {
-    _logMessage('Stop ble discovery');
+    _logMessage('stopScan - stop ble discovery');
     await _subscription?.cancel();
     _subscription = null;
     _pushState();
@@ -68,4 +70,3 @@ class BleScanner implements ReactiveState<BleScannerState> {
 
   StreamSubscription? _subscription;
 }
-

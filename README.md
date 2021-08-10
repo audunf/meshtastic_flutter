@@ -43,6 +43,8 @@ Overview of options: https://flutter.dev/docs/development/data-and-backend/state
 The recommended way these days: is "Provider":
 Example: https://github.com/flutter/samples/blob/master/provider_counter/lib/main.dart
 
+https://pub.dev/documentation/provider/latest/provider/ValueListenableProvider-class.html
+
 # Protobuf
 * Flutter protobufs: https://xinyitao.tech/2019/01/12/Using-Protobuf-In-Flutter/ - https://www.andrew.cmu.edu/user/xinyit/2019/01/12/Using-Protobuf-In-Flutter/
 

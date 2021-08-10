@@ -3,22 +3,21 @@ import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
 import 'package:meshtastic_flutter/bluetooth/reactive_state.dart';
 
 class BleDeviceConnector extends ReactiveState<ConnectionStateUpdate> {
+  final FlutterReactiveBle _ble;
+  final void Function(String message) _logMessage;
+  final _deviceConnectionController = StreamController<ConnectionStateUpdate>();
+  // ignore: cancel_subscriptions
+  late StreamSubscription<ConnectionStateUpdate> _connection;
+
   BleDeviceConnector({
     required FlutterReactiveBle ble,
     required Function(String message) logMessage,
-  })  : _ble = ble,
-        _logMessage = logMessage;
-
-  final FlutterReactiveBle _ble;
-  final void Function(String message) _logMessage;
+  })  : _ble = ble, _logMessage = logMessage {
+    //_logMessage("BleDeviceConnector::ctor");
+  }
 
   @override
   Stream<ConnectionStateUpdate> get state => _deviceConnectionController.stream;
-
-  final _deviceConnectionController = StreamController<ConnectionStateUpdate>();
-
-  // ignore: cancel_subscriptions
-  late StreamSubscription<ConnectionStateUpdate> _connection;
 
   Future<void> connect(String deviceId) async {
     _logMessage('Start connecting to $deviceId');
@@ -33,7 +32,7 @@ class BleDeviceConnector extends ReactiveState<ConnectionStateUpdate> {
 
   Future<void> disconnect(String deviceId) async {
     try {
-      _logMessage('disconnecting to device: $deviceId');
+      _logMessage('disconnecting from device: $deviceId');
       await _connection.cancel();
     } on Exception catch (e, _) {
       _logMessage("Error disconnecting from a device: $e");

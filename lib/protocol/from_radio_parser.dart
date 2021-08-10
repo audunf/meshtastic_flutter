@@ -58,6 +58,9 @@ class FromRadioParser {
       case MeshPacket_PayloadVariant.encrypted:
         handleEncryptedPayload(mp.encrypted);
         break;
+      default:
+        print("-> unknown packet payload variant " + mp.whichPayloadVariant().toString());
+        break;
     }
   }
 
