@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:meshtastic_flutter/bluetooth/ble_device_connector.dart';
+import 'package:meshtastic_flutter/bluetooth/ble_device_interactor.dart';
 import 'package:meshtastic_flutter/constants.dart' as Constants;
 import 'package:meshtastic_flutter/model/settings_model.dart';
+import 'package:meshtastic_flutter/proto-autogen/mesh.pb.dart';
+import 'package:meshtastic_flutter/protocol/to_radio.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
 import 'package:settings_ui/settings_ui.dart';
@@ -8,46 +12,51 @@ import 'package:meshtastic_flutter/bluetooth/ble_scanner.dart';
 
 class SettingsScreen extends StatelessWidget {
   @override
-  Widget build(BuildContext context) {
-    var bluetoothDeviceId = Provider.of<SettingsModel>(context).bluetoothDeviceId;
-    //BleScannerState status = Provider.of<BleScannerState>(context);
-    var status = Provider.of<BleStatus>(context);
-    print("xyzz " + status.toString());
-
-    return Scaffold(
-        body: SettingsList(
-      sections: [
-        SettingsSection(
-          title: 'Bluetooth',
-          tiles: [
-            SettingsTile(
-              title: 'Device',
-              subtitle: bluetoothDeviceId,
-              leading: Icon(Icons.bluetooth),
-              onPressed: (BuildContext ctx) {
-                //print("BLE STATUS: " + status.toString());
-                Navigator.of(ctx).push(MaterialPageRoute(
-                  builder: (_) => BluetoothDeviceScreen(),
-                ));
-              },
-            ),
-          ],
-        ),
-      ],
-    ));
-  }
+  Widget build(BuildContext context) => Consumer2<SettingsModel, BleDeviceConnector>(
+      builder: (ctx, settingsModel, bleConnector, __) => Scaffold(
+              body: SettingsList(
+            sections: [
+              SettingsSection(
+                title: 'Bluetooth',
+                tiles: [
+                  SettingsTile.switchTile(
+                    title: 'Disconnect',
+                    leading: Icon(Icons.bluetooth),
+                    switchValue: settingsModel.enableBluetooth,
+                    onToggle: (bool value) {
+                      settingsModel.setEnableBluetooth(value);
+                      if (settingsModel.bluetoothDeviceId != "None") {
+                        bleConnector.connect(settingsModel.bluetoothDeviceId);
+                      }
+                    },
+                  ),
+                  SettingsTile(
+                    title: 'Device',
+                    enabled: settingsModel.enableBluetooth,
+                    subtitle: settingsModel.bluetoothDeviceName + ", " + settingsModel.bluetoothDeviceId,
+                    leading: Icon(Icons.bluetooth),
+                    onPressed: (BuildContext ctx) {
+                      Navigator.of(ctx).push(MaterialPageRoute(
+                        builder: (_) => BluetoothDeviceListScreen(),
+                      ));
+                    },
+                  ),
+                ],
+              ),
+            ],
+          )));
 }
 
 // Show status message - or devices
-class BluetoothDeviceScreen extends StatelessWidget {
+class BluetoothDeviceListScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Consumer2<BleScanner, BleScannerState>(
-    builder: (_, bleScanner, bleScannerState, __) => _DeviceList(
-      scannerState: bleScannerState,
-      startScan: bleScanner.startScan,
-      stopScan: bleScanner.stopScan,
-    ),
-  );
+        builder: (_, bleScanner, bleScannerState, __) => _DeviceList(
+          scannerState: bleScannerState,
+          startScan: bleScanner.startScan,
+          stopScan: bleScanner.stopScan,
+        ),
+      );
 }
 
 class _DeviceList extends StatefulWidget {
@@ -62,8 +71,6 @@ class _DeviceList extends StatefulWidget {
 }
 
 class _DeviceListState extends State<_DeviceList> {
-  int _selectedDevice = 0;
-
   @override
   void initState() {
     super.initState();
@@ -77,41 +84,39 @@ class _DeviceListState extends State<_DeviceList> {
   }
 
   void _startScanning() {
-    print("_startScanning");
     widget.startScan(<Uuid>[Constants.meshtasticServiceId]);
   }
 
   @override
-  Widget build(BuildContext context) {
-    return SettingsList(sections: [
-      SettingsSection(
-        tiles: widget.scannerState.discoveredDevices
-            .map(
-              (device) => SettingsTile(
-                title: device.name + device.id,
-                trailing: trailingWidget(device.id),
-                onPressed: (BuildContext context) async {
-                  widget.stopScan();
-                  selectDevice(device.id);
-                },
-              ),
+  Widget build(BuildContext context) => Consumer2<SettingsModel, BleDeviceConnector>(
+      builder: (ctx, settingsModel, bleDeviceConnector, __) => SettingsList(sections: [
+            SettingsSection(
+              title: 'Discovered devices',
+              tiles: widget.scannerState.discoveredDevices
+                  .map(
+                    (device) => SettingsTile(
+                      title: device.name + ", " + device.id,
+                      trailing: trailingWidget(device.id, settingsModel.bluetoothDeviceId),
+                      onPressed: (BuildContext context) async {
+                        widget.stopScan();
+                        settingsModel.setBluetoothDeviceId(device.id);
+                        settingsModel.setBluetoothDeviceName(device.name);
+                        bleDeviceConnector.connect(device.id);
+                        Navigator.of(context).pop();
+                      },
+                    ),
+                  )
+                  .toList(),
             )
-            .toList(),
-      )
-    ]);
-  }
+          ]));
 
-  selectDevice(deviceId) {
-    _selectedDevice = deviceId;
-  }
-
-  Widget trailingWidget(deviceId) {
-    return (deviceId == _selectedDevice) ? Icon(Icons.check, color: Colors.blue) : Icon(null);
+  Widget trailingWidget(deviceId, selectedDeviceId) {
+    return (deviceId == selectedDeviceId) ? Icon(Icons.check, color: Colors.blue) : Icon(null);
   }
 }
 
-class BleStatusScreen extends StatelessWidget {
-  const BleStatusScreen({required this.status, Key? key}) : super(key: key);
+class BleStatusWidget extends StatelessWidget {
+  const BleStatusWidget({required this.status, Key? key}) : super(key: key);
   final BleStatus status;
 
   String determineText(BleStatus status) {
@@ -119,7 +124,7 @@ class BleStatusScreen extends StatelessWidget {
       case BleStatus.unsupported:
         return "This device does not support Bluetooth";
       case BleStatus.unauthorized:
-        return "Authorize the FlutterReactiveBle example app to use Bluetooth and location";
+        return "Authorize the app to use Bluetooth and location";
       case BleStatus.poweredOff:
         return "Bluetooth is off on your device - turn it on";
       case BleStatus.locationServicesDisabled:

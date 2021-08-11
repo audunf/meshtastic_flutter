@@ -1,31 +1,28 @@
 # meshtastic_flutter
-
-# components
-AppBar - top bar
-BottomNavigationBar 
+Routes and keeping the app bar/bottom nav bar:
+https://stackoverflow.com/questions/66755344/flutter-navigation-push-while-keeping-the-same-appbar
 
 # TODO 
- TODO list:
- Create a very rudimentary main UI. Tabs: Chat, People, Map, Channels, Settings
- Main header: Cloud status icon.
- Settings tab:
-   Combo-box showing BT devices
-     When BT device has been selected, display device details:
-       * Set "Your name"
-       * Region
- Chat:
-    Not quite sure how it works with multiple channels active?
-    Displays message, cloud icon, date/time, text
- People:
-    Display name, battery, time since node last visible, GPS coordinates
- Map:
-    Display map with name and distance. Can probably use a marker here? For the actual position?
- Channel config:
-    Select channel options (long-slow, etc.)
-    Set channel name.
-    Display the QR code with channel/encryption settings.
-    Allow sharing of channel settings
-    Interpret channel settings
+TODO list:
+- should re-structure BleDataStreams. Where should it
+
+
+Settings tab:
+  * Set "Your name"
+  * Region
+Chat:
+  Not quite sure how it works with multiple channels active?
+  Displays message, cloud icon, date/time, text
+People:
+  Display name, battery, time since node last visible, GPS coordinates
+Map:
+  Display map with name and distance. Can probably use a marker here? For the actual position?
+Channel config:
+  Select channel options (long-slow, etc.)
+  Set channel name.
+  Display the QR code with channel/encryption settings.
+  Allow sharing of channel settings
+  Interpret channel settings
 
 - handle disconnects too
 - make a proper state machine?
@@ -35,7 +32,7 @@ Sequence will be:
 1. application scans for available devices
 2. User selects a device
 3. Download the NodeDB database
-  
+
 
 # State handling
 Overview of options: https://flutter.dev/docs/development/data-and-backend/state-mgmt/options
@@ -45,6 +42,7 @@ Example: https://github.com/flutter/samples/blob/master/provider_counter/lib/mai
 
 https://pub.dev/documentation/provider/latest/provider/ValueListenableProvider-class.html
 
+
 # Protobuf
 * Flutter protobufs: https://xinyitao.tech/2019/01/12/Using-Protobuf-In-Flutter/ - https://www.andrew.cmu.edu/user/xinyit/2019/01/12/Using-Protobuf-In-Flutter/
 
@@ -52,6 +50,7 @@ To generate all:
 meshtastic_flutter$ protoc --proto_path=./Meshtastic-protobufs --dart_out=lib/proto-autogen ./Meshtastic-protobufs/*.proto
 
 https://github.com/meshtastic/Meshtastic-Android/blob/479f242e066a77c1a789b2ae0265f1743f662b43/app/src/main/java/com/geeksville/mesh/service/BluetoothInterface.kt
+
 
 # Bluetooth lib selection
 Selected the following Bluetooth lib for Flutter: https://github.com/PhilipsHue/flutter_reactive_ble
@@ -63,6 +62,7 @@ Selected the following Bluetooth lib for Flutter: https://github.com/PhilipsHue/
 * Flutter BLE lib https://github.com/Polidea/FlutterBleLib
   * Not sure it's maintained
     
+
 # Meshtastic and Bluetooth
 Meshtastic Bluetooth API: https://meshtastic.org/docs/developers/device/device-api
 * UUID for the service: 6ba1b218-15a8-461f-9fa8-5dcae273eafd

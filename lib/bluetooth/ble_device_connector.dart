@@ -5,9 +5,13 @@ import 'package:meshtastic_flutter/bluetooth/reactive_state.dart';
 class BleDeviceConnector extends ReactiveState<ConnectionStateUpdate> {
   final FlutterReactiveBle _ble;
   final void Function(String message) _logMessage;
-  final _deviceConnectionController = StreamController<ConnectionStateUpdate>();
+  final _deviceConnectionController = StreamController<ConnectionStateUpdate>.broadcast();
   // ignore: cancel_subscriptions
   late StreamSubscription<ConnectionStateUpdate> _connection;
+
+  @override
+  Stream<ConnectionStateUpdate> get state => _deviceConnectionController.stream;
+
 
   BleDeviceConnector({
     required FlutterReactiveBle ble,
@@ -16,14 +20,12 @@ class BleDeviceConnector extends ReactiveState<ConnectionStateUpdate> {
     //_logMessage("BleDeviceConnector::ctor");
   }
 
-  @override
-  Stream<ConnectionStateUpdate> get state => _deviceConnectionController.stream;
-
   Future<void> connect(String deviceId) async {
     _logMessage('Start connecting to $deviceId');
     _connection = _ble.connectToDevice(id: deviceId).listen(
-      (update) {
+      (update) async {
         _logMessage('ConnectionState for device $deviceId : ${update.connectionState}');
+        final mtu = await _ble.requestMtu(deviceId: deviceId, mtu: 500);
         _deviceConnectionController.add(update);
       },
       onError: (Object e) => _logMessage('Connecting to device $deviceId resulted in error $e'),

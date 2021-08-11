@@ -15,22 +15,23 @@ class BleScannerState {
   final bool scanIsInProgress;
 }
 
+
 class BleScanner implements ReactiveState<BleScannerState> {
   final FlutterReactiveBle _ble;
   final void Function(String message) _logMessage;
-  final StreamController<BleScannerState> _stateStreamController = StreamController();
+  final StreamController<BleScannerState> _stateStreamController = StreamController.broadcast();
   final _devices = <DiscoveredDevice>[];
+  StreamSubscription? _subscription;
+
+  @override
+  Stream<BleScannerState> get state => _stateStreamController.stream;
 
   BleScanner({
     required FlutterReactiveBle ble,
     required Function(String message) logMessage,
   })  : _ble = ble,
         _logMessage = logMessage {
-    _logMessage("*** BleScanner::ctor");
   }
-
-  @override
-  Stream<BleScannerState> get state => _stateStreamController.stream;
 
   void startScan(List<Uuid> serviceIds) {
     _logMessage('Start ble discovery');
@@ -67,6 +68,4 @@ class BleScanner implements ReactiveState<BleScannerState> {
   Future<void> dispose() async {
     await _stateStreamController.close();
   }
-
-  StreamSubscription? _subscription;
 }

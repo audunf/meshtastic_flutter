@@ -104,7 +104,7 @@ class Bluetooth extends ChangeNotifier {
         print("end of data");
         break;
       }
-      _parser.handleFromRadio(buf);
+      _parser.handleFromRadioBuffer(buf);
     } while(true);
 
   }

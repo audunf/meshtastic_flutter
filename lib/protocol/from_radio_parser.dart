@@ -5,47 +5,48 @@ import 'package:meshtastic_flutter/proto-autogen/portnums.pb.dart';
 class FromRadioParser {
   FromRadioParser();
 
-  handleFromRadio(dataBuffer) {
+  handleFromRadioBuffer(List<int> dataBuffer) {
     FromRadio fr = FromRadio.fromBuffer(dataBuffer);
+  }
 
+  handleFromRadio(FromRadio fr) {
     switch(fr.whichPayloadVariant()) {
       case FromRadio_PayloadVariant.packet:
-        handleMeshPacket(fr.packet);
-        break;
+        return handleMeshPacket(fr.packet);
       case FromRadio_PayloadVariant.logRecord:
-        handleLogRecord(fr.logRecord);
-        break;
+        return handleLogRecord(fr.logRecord);
       case FromRadio_PayloadVariant.myInfo:
-        handleMyNodeInfo(fr.myInfo);
-        break;
+        return handleMyNodeInfo(fr.myInfo);
       case FromRadio_PayloadVariant.nodeInfo:
-        handleNodeInfo(fr.nodeInfo);
-        break;
+        return handleNodeInfo(fr.nodeInfo);
       case FromRadio_PayloadVariant.configCompleteId:
         print("** configCompleteId " + fr.configCompleteId.toString());
-        break;
+        return;
       case FromRadio_PayloadVariant.rebooted:
         print("** rebooted " + fr.rebooted.toString());
-        break;
+        return;
       case FromRadio_PayloadVariant.notSet:
         print("** notSet");
-        break;
+        return false;
       default:
         print("** DEFAULT: " + fr.toDebugString());
-        break;
+        return false;
     }
   }
 
   handleNodeInfo(NodeInfo ni) {
     print("** nodeInfo " + ni.toString());
+    return ni;
   }
 
   handleMyNodeInfo(MyNodeInfo mni) {
     print("** myNodeInfo " + mni.toString());
+    return mni;
   }
 
   handleLogRecord(LogRecord lr) {
     print("** logRecord " + lr.toString());
+    return lr;
   }
 
   handleMeshPacket(MeshPacket mp) {
@@ -53,10 +54,10 @@ class FromRadioParser {
 
     switch(mp.whichPayloadVariant()) {
       case MeshPacket_PayloadVariant.decoded:
-        handleDataPayload(mp.decoded);
+        return handleDataPayload(mp.decoded);
         break;
       case MeshPacket_PayloadVariant.encrypted:
-        handleEncryptedPayload(mp.encrypted);
+        return handleEncryptedPayload(mp.encrypted);
         break;
       default:
         print("-> unknown packet payload variant " + mp.whichPayloadVariant().toString());
@@ -67,80 +68,82 @@ class FromRadioParser {
   handleDataPayload(Data d) {
     switch(d.portnum) {
       case PortNum.TEXT_MESSAGE_APP:
-        handleTextMessagePortNum(d.payload);
+        return handleTextMessagePortNum(d.payload);
         break;
       case PortNum.REMOTE_HARDWARE_APP:
-        break;
+        return false;
       case PortNum.POSITION_APP:
-        handlePositionPortNum(d.payload);
-        break;
+        return handlePositionPortNum(d.payload);
       case PortNum.NODEINFO_APP:
-        handleNodeInfoPortNum(d.payload);
-        break;
+        return handleNodeInfoPortNum(d.payload);
       case PortNum.ROUTING_APP:
-        handleRoutingPortNum(d.payload);
-        break;
+        return handleRoutingPortNum(d.payload);
       case PortNum.ADMIN_APP:
-        handleAdminPortNum(d.payload);
-        break;
+        return handleAdminPortNum(d.payload);
       case PortNum.REPLY_APP:
         print("PortNum.REPLY_APP");
-        break;
+        return false;
       case PortNum.IP_TUNNEL_APP:
         print("PortNum.IP_TUNNEL_APP");
-        break;
+        return false;
       case PortNum.SERIAL_APP:
         print("PortNum.SERIAL_APP");
-        break;
+        return false;
       case PortNum.STORE_FORWARD_APP:
         print("PortNum.STORE_FORWARD_APP");
-        break;
+        return false;
       case PortNum.RANGE_TEST_APP:
         print("PortNum.RANGE_TEST_APP");
-        break;
+        return false;
       case PortNum.ENVIRONMENTAL_MEASUREMENT_APP:
         print("PortNum.ENVIRONMENTAL_MEASUREMENT_APP");
-        break;
+        return false;
       case PortNum.PRIVATE_APP:
         print("PortNum.PRIVATE_APP");
-        break;
+        return false;
       case PortNum.ATAK_FORWARDER:
         print("PortNum.ATAK_FORWARDER");
-        break;
+        return false;
       case PortNum.UNKNOWN_APP:
         print("PortNum.UNKNOWN_APP - ignoring");
-        break;
+        return false;
       default:
         print("PortNum - DEFAULT - should not happen");
-        break;
+        return false;
     }
   }
 
   handleEncryptedPayload(List<int> bytes) {
     print("*** handleEncryptedPayload - NOT HANDLED - FIXME");
+    return false;
   }
 
   handleAdminPortNum(buf) {
     AdminMessage am = AdminMessage.fromBuffer(buf);
     print("*** handleAdminPortNum: " + am.toString());
+    return am;
   }
 
   handlePositionPortNum(buf) {
     Position p = Position.fromBuffer(buf);
     print("*** handlePositionPortNum: " + p.toString());
+    return p;
   }
 
   handleRoutingPortNum(buf) {
     Routing r = Routing.fromBuffer(buf);
     print("*** handleRoutingPortNum: " + r.toString());
+    return r;
   }
 
   handleNodeInfoPortNum(buf) {
     User u = User.fromBuffer(buf);
     print("*** handleNodeInfoPortNum: " + u.toString());
+    return u;
   }
 
   handleTextMessagePortNum(buf) {
     print("*** TEXT MESSAGE: " + buf.toString());
+    return false;
   }
 }
