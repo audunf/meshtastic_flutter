@@ -4,6 +4,13 @@ https://stackoverflow.com/questions/66755344/flutter-navigation-push-while-keepi
 
 # TODO 
 TODO list:
+1. The BT device list should appear inside the BottomNavigationBar and with the same heading. Even though it's a separate screen.
+1. Store SettingsModel data in 'shared_preferences'. Subscribe to changes.
+2. Populate SettingsModel data from 'shared_preferences' on app startup   
+2. If there's already a selected BT device ID - then try to connect, unless BT is off. This should make 'waiting for device <BT name> <BT ID>' dialog appear.
+3. If there isn't a selected BT device ID, then open settings. Flash "Please select BT device"
+
+Put the read/write operations in a separate controlled outside of the BleDataStreams provider.
 - should re-structure BleDataStreams. Where should it
 
 
