@@ -3,8 +3,18 @@ Routes and keeping the app bar/bottom nav bar:
 https://stackoverflow.com/questions/66755344/flutter-navigation-push-while-keeping-the-same-appbar
 
 # TODO 
+Seach for: flutter WillPopscope navigator
+back button should pop local navigator stack only - not exit app. See this: 
+https://stackoverflow.com/questions/56890424/use-nested-navigator-with-willpopscope-in-flutter
+
 TODO list:
 1. The BT device list should appear inside the BottomNavigationBar and with the same heading. Even though it's a separate screen.
+   https://stackoverflow.com/questions/55888715/how-to-persist-bottomnavigationbar-when-using-flutter-navigation-and-routes
+   https://medium.com/flutter/getting-to-the-bottom-of-navigation-in-flutter-b3e440b9386
+   https://gist.github.com/HansMuller/b189642d10fd236a41044fdf7626f7b0
+  
+
+
 1. Store SettingsModel data in 'shared_preferences'. Subscribe to changes.
 2. Populate SettingsModel data from 'shared_preferences' on app startup   
 2. If there's already a selected BT device ID - then try to connect, unless BT is off. This should make 'waiting for device <BT name> <BT ID>' dialog appear.

@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:logger/logger.dart';
 import 'package:meshtastic_flutter/proto-autogen/mesh.pb.dart';
+import 'package:meshtastic_flutter/widget/bluetooth_connection_icon.dart';
+import 'package:meshtastic_flutter/widget/tab_definition.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
+import 'package:tuple/tuple.dart';
 
 import 'bluetooth/ble_data_streams.dart';
 import 'bluetooth/ble_device_connector.dart';
@@ -18,7 +22,39 @@ import 'screen/map_screen.dart';
 import 'screen/people_screen.dart';
 import 'screen/settings_screen.dart';
 
-const _themeColor = Colors.blue;
+List<TabDefinition> allTabDefinitions = <TabDefinition>[
+  TabDefinition(0, 'Chat', Icons.chat, Colors.teal, [
+    Tuple2('/', (tabDef) {
+      return ChatScreen(tabDefinition: tabDef);
+    }),
+    Tuple2('/foobar', (tabDef) {
+      return ChatScreen(tabDefinition: tabDef);
+    })
+  ]),
+  TabDefinition(1, 'People', Icons.people, Colors.cyan, [
+    Tuple2('/', (tabDef) {
+      return PeopleScreen(tabDefinition: tabDef);
+    })
+  ]),
+  TabDefinition(2, 'Map', Icons.map, Colors.deepPurple, [
+    Tuple2('/', (tabDef) {
+      return MapScreen(tabDefinition: tabDef);
+    })
+  ]),
+  TabDefinition(3, 'Channel', Icons.contactless_outlined, Colors.orange, [
+    Tuple2('/', (tabDef) {
+      return ChannelScreen(tabDefinition: tabDef);
+    })
+  ]),
+  TabDefinition(4, 'Settings', Icons.settings, Colors.blue, [
+    Tuple2('/', (tabDef) {
+      return SettingsScreen(tabDefinition: tabDef);
+    }),
+    Tuple2('/bluetoothDevices', (tabDef) {
+      return BluetoothDeviceListScreen(tabDefinition: tabDef);
+    })
+  ])
+];
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -93,14 +129,13 @@ void main() async {
   ));
 }
 
-
 class MeshtasticApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Meshtastic',
-      color: _themeColor,
+      color: Colors.blue,
       theme: ThemeData(
         primarySwatch: Colors.blue,
         brightness: Brightness.light,
@@ -110,142 +145,181 @@ class MeshtasticApp extends StatelessWidget {
         accentColor: Colors.deepPurple,
         brightness: Brightness.dark,
       ),
-      home: MeshtasticHomePage(title: 'Meshtastic'),
+      home: HomePage(),
+    );
+  }
+}
+
+class HomePage extends StatefulWidget {
+  @override
+  _HomePageState createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> with TickerProviderStateMixin<HomePage> {
+  int _currentIndex = 0;
+  late AnimationController _hide;
+  late List<AnimationController> _faders;
+  List<Key> _destinationKeys = List<Key>.generate(allTabDefinitions.length, (int index) => GlobalKey()).toList();
+
+  @override
+  void initState() {
+    super.initState();
+
+    _faders = allTabDefinitions.map<AnimationController>((TabDefinition destination) {
+      return AnimationController(vsync: this, duration: Duration(milliseconds: 200));
+    }).toList();
+    _faders[_currentIndex].value = 1.0;
+    _destinationKeys = List<Key>.generate(allTabDefinitions.length, (int index) => GlobalKey()).toList();
+    _hide = AnimationController(vsync: this, duration: kThemeAnimationDuration);
+  }
+
+  @override
+  void dispose() {
+    for (AnimationController controller in _faders) controller.dispose();
+    _hide.dispose();
+    super.dispose();
+  }
+
+  bool _handleScrollNotification(ScrollNotification notification) {
+    if (notification.depth == 0) {
+      if (notification is UserScrollNotification) {
+        final UserScrollNotification userScroll = notification;
+        switch (userScroll.direction) {
+          case ScrollDirection.forward:
+            _hide.forward();
+            break;
+          case ScrollDirection.reverse:
+            _hide.reverse();
+            break;
+          case ScrollDirection.idle:
+            break;
+        }
+      }
+    }
+    return false;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return NotificationListener<ScrollNotification>(
+      onNotification: _handleScrollNotification,
+      child: Scaffold(
+        body: SafeArea(
+          top: false,
+          child: Stack(
+            fit: StackFit.expand,
+            children: allTabDefinitions.map((TabDefinition tabDef) {
+              final Widget view = FadeTransition(
+                opacity: _faders[tabDef.index].drive(CurveTween(curve: Curves.fastOutSlowIn)),
+                child: KeyedSubtree(
+                  key: _destinationKeys[tabDef.index],
+                  child: TabDefinitionView(
+                    tabDefinition: tabDef,
+                    onNavigation: () {
+                      _hide.forward();
+                    },
+                  ),
+                ),
+              );
+              if (tabDef.index == _currentIndex) {
+                _faders[tabDef.index].forward();
+                return view;
+              } else {
+                _faders[tabDef.index].reverse();
+                if (_faders[tabDef.index].isAnimating) {
+                  return IgnorePointer(child: view);
+                }
+                return Offstage(child: view);
+              }
+            }).toList(),
+          ),
+        ),
+        bottomNavigationBar: ClipRect(
+          child: SizeTransition(
+            sizeFactor: _hide,
+            axisAlignment: -1.0,
+            child: BottomNavigationBar(
+              currentIndex: _currentIndex,
+              onTap: (int index) {
+                setState(() {
+                  _currentIndex = index;
+                });
+              },
+              items: allTabDefinitions.map((TabDefinition destination) {
+                return BottomNavigationBarItem(icon: Icon(destination.icon), backgroundColor: destination.color, label: destination.title);
+              }).toList(),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
 
 
-class MeshtasticHomePage extends StatefulWidget {
-  MeshtasticHomePage({Key? key, required this.title}) : super(key: key);
+class ViewNavigatorObserver extends NavigatorObserver {
+  final VoidCallback onNavigation;
 
-  final String title;
+  ViewNavigatorObserver(this.onNavigation);
 
-  @override
-  _MeshtasticHomePageState createState() => _MeshtasticHomePageState();
+  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    onNavigation();
+  }
+
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    onNavigation();
+  }
 }
 
 
-class _MeshtasticHomePageState extends State<MeshtasticHomePage> {
-  int _currentTabIndex = 4;
+class TabDefinitionView extends StatefulWidget {
+  final TabDefinition tabDefinition;
+  final VoidCallback onNavigation;
 
-  _MeshtasticHomePageState();
-
-  static final TextStyle _optionStyle = TextStyle(fontSize: 30, fontWeight: FontWeight.bold);
-  final List<Widget> _tabs = <Widget>[
-    ChatScreen(),
-    PeopleScreen(),
-    MapScreen(),
-    ChannelScreen(),
-    SettingsScreen(),
-  ];
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _currentTabIndex = index;
-    });
-
-    //bt.addListener(bluetoothListener);
-    //bt.setupBluetooth();
-  }
-
-  /*
-  bluetoothListener() {
-    var inProgress = false;
-
-    var state = bt.getState();
-    print("bluetoothListener: $state");
-    if (state == BleStatus.ready) {
-      bt.scanForDevices((deviceId) async {
-        if (inProgress == false) {
-          bt.connect(deviceId);
-          inProgress = true;
-        }
-      });
-    }
-  }
-   */
+  const TabDefinitionView({Key? key, required this.tabDefinition, required this.onNavigation}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) => Consumer<BleDeviceConnector>(
-      builder: (ctx, bleDeviceConnector, __) => Scaffold(
-            appBar: AppBar(title: Text(widget.title), actions: <Widget>[
-              IconButton(
-                icon: BluetoothConnectionIcon(),
-                onPressed: () {
-                  // go to the settings BT screen - if not already connected
-                },
-              )
-            ]),
-            body: Center(
-              child: _tabs.elementAt(_currentTabIndex),
-            ),
-            bottomNavigationBar: BottomNavigationBar(
-              items: const <BottomNavigationBarItem>[
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.chat),
-                  label: 'Chat',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.people),
-                  label: 'People',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.map),
-                  label: 'Map',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.contactless_outlined),
-                  label: 'Channel',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.settings),
-                  label: 'Settings',
-                ),
-              ],
-              currentIndex: _currentTabIndex,
-              selectedItemColor: Colors.amber[800],
-              unselectedItemColor: Colors.grey[400],
-              onTap: _onItemTapped,
-            ),
-          ));
+  _DestinationViewState createState() => _DestinationViewState();
 }
 
 
-class BluetoothConnectionIcon extends StatelessWidget {
+class _DestinationViewState extends State<TabDefinitionView> {
   @override
-  Widget build(BuildContext context) => Consumer3<BleStatus, BleScannerState, ConnectionStateUpdate>(
-      builder: (_, status, scannerState, connectionState, __) => IconButton(
-            icon: getIcon(status, scannerState, connectionState),
-            onPressed: () {},
-          ));
+  Widget build(BuildContext context) {
+    print("_DestinationViewState widget.tabDef " + widget.tabDefinition.title);
 
-  Widget getIcon(BleStatus status, BleScannerState scannerState, ConnectionStateUpdate connectionState) {
-    print("BluetoothConnectionIcon bleStatus=" +
-        status.toString() +
-        ", connectionState=" +
-        connectionState.toString() +
-        ", scannerState.scanInProgress=" +
-        scannerState.scanIsInProgress.toString() +
-        ", discoveredDevices=" +
-        scannerState.discoveredDevices.toString());
-    IconData icon = Icons.bluetooth_disabled;
-    if (status != BleStatus.ready) {
-      icon = Icons.bluetooth_disabled;
-    }
-    if (scannerState.scanIsInProgress) {
-      icon = Icons.bluetooth_searching;
-    }
+    return Navigator(
+      observers: <NavigatorObserver>[
+        ViewNavigatorObserver(widget.onNavigation),
+      ],
+      onGenerateRoute: (RouteSettings settings) {
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (BuildContext context) {
+            // This calls either default route ("/"), or other named routes defined under a tab - it should enable navigation with state "inside" a tab
+            return widget.tabDefinition.createScreen(settings.name, widget.tabDefinition);
+/*
+            switch (settings.name) {
+              case '/':
+                return RootPage(tabDefinition: widget.tabDefinition);
+              case '/chat':
+                return ChatScreen(tabDefinition: widget.tabDefinition);
+              case '/people':
+                return PeopleScreen(tabDefinition: widget.tabDefinition);
+              case '/map':
+                return MapScreen(tabDefinition: widget.tabDefinition);
+              case '/channel':
+                return ChannelScreen(tabDefinition: widget.tabDefinition);
+              case '/settings':
+                return SettingsScreen(tabDefinition: widget.tabDefinition);
+              default:
+                return SettingsScreen(tabDefinition: widget.tabDefinition);
+            }
 
-    if (connectionState.connectionState == DeviceConnectionState.connected) {
-      icon = Icons.bluetooth_connected_outlined;
-    } else if (connectionState.connectionState == DeviceConnectionState.connected) {
-      icon = Icons.bluetooth_connected;
-    }
-
-    return Icon(
-      icon,
-      color: Colors.white,
+ */
+          },
+        );
+      },
     );
   }
 }

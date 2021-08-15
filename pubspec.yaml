@@ -36,6 +36,7 @@ dependencies:
   logger: ^1.0.0
   settings_ui: ^1.0.0
   shared_preferences: ^2.0.6
+  tuple: ^2.0.0
 
 dev_dependencies:
   flutter_test:

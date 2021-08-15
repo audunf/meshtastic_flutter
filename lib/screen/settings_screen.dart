@@ -5,16 +5,26 @@ import 'package:meshtastic_flutter/constants.dart' as Constants;
 import 'package:meshtastic_flutter/model/settings_model.dart';
 import 'package:meshtastic_flutter/proto-autogen/mesh.pb.dart';
 import 'package:meshtastic_flutter/protocol/to_radio.dart';
+import 'package:meshtastic_flutter/widget/tab_definition.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
 import 'package:settings_ui/settings_ui.dart';
 import 'package:meshtastic_flutter/bluetooth/ble_scanner.dart';
 
 class SettingsScreen extends StatelessWidget {
+  final TabDefinition tabDefinition;
+
+  const SettingsScreen({Key? key, required this.tabDefinition}) : super(key: key);
+
   @override
   Widget build(BuildContext context) => Consumer2<SettingsModel, BleDeviceConnector>(
       builder: (ctx, settingsModel, bleConnector, __) => Scaffold(
-              body: SettingsList(
+          appBar: AppBar(
+            title: Text(tabDefinition.title),
+            backgroundColor: tabDefinition.color,
+          ),
+          backgroundColor: tabDefinition.color[50],
+          body: SettingsList(
             sections: [
               SettingsSection(
                 title: 'Bluetooth',
@@ -36,9 +46,12 @@ class SettingsScreen extends StatelessWidget {
                     subtitle: settingsModel.bluetoothDeviceName + ", " + settingsModel.bluetoothDeviceId,
                     leading: Icon(Icons.bluetooth),
                     onPressed: (BuildContext ctx) {
+                      Navigator.pushNamed(context, "/bluetoothDevices");
+                      /*
                       Navigator.of(ctx).push(MaterialPageRoute(
-                        builder: (_) => BluetoothDeviceListScreen(),
+                        builder: (_) => BluetoothDeviceListScreen(tabDefinition: this.tabDefinition),
                       ));
+                       */
                     },
                   ),
                 ],
@@ -49,6 +62,10 @@ class SettingsScreen extends StatelessWidget {
 
 // Show status message - or devices
 class BluetoothDeviceListScreen extends StatelessWidget {
+  final TabDefinition tabDefinition;
+
+  const BluetoothDeviceListScreen({Key? key, required this.tabDefinition}) : super(key: key);
+
   @override
   Widget build(BuildContext context) => Consumer2<BleScanner, BleScannerState>(
         builder: (_, bleScanner, bleScannerState, __) => _DeviceList(
