@@ -22,6 +22,7 @@ import 'screen/map_screen.dart';
 import 'screen/people_screen.dart';
 import 'screen/settings_screen.dart';
 
+/// Definition of screens and sub-screens with their routes
 List<TabDefinition> allTabDefinitions = <TabDefinition>[
   TabDefinition(0, 'Chat', Icons.chat, Colors.teal, [
     Tuple2('/', (tabDef) {
@@ -52,10 +53,17 @@ List<TabDefinition> allTabDefinitions = <TabDefinition>[
     }),
     Tuple2('/bluetoothDevices', (tabDef) {
       return BluetoothDeviceListScreen(tabDefinition: tabDef);
+    }),
+    Tuple2('/userName', (tabDef) {
+      return EditUserNameScreen(tabDefinition: tabDef);
+    }),
+    Tuple2('/selectRegion', (tabDef) {
+      return SelectRegionScreen(tabDefinition: tabDef);
     })
   ])
 ];
 
+/// MAIN
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -129,6 +137,7 @@ void main() async {
   ));
 }
 
+/// The app
 class MeshtasticApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
@@ -150,11 +159,13 @@ class MeshtasticApp extends StatelessWidget {
   }
 }
 
+/// HomePage widget
 class HomePage extends StatefulWidget {
   @override
   _HomePageState createState() => _HomePageState();
 }
 
+/// State of the HomePage
 class _HomePageState extends State<HomePage> with TickerProviderStateMixin<HomePage> {
   int _currentIndex = 0;
   late AnimationController _hide;
@@ -205,35 +216,47 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin<HomeP
       onNotification: _handleScrollNotification,
       child: Scaffold(
         body: SafeArea(
-          top: false,
-          child: Stack(
-            fit: StackFit.expand,
-            children: allTabDefinitions.map((TabDefinition tabDef) {
-              final Widget view = FadeTransition(
-                opacity: _faders[tabDef.index].drive(CurveTween(curve: Curves.fastOutSlowIn)),
-                child: KeyedSubtree(
-                  key: _destinationKeys[tabDef.index],
-                  child: TabDefinitionView(
-                    tabDefinition: tabDef,
-                    onNavigation: () {
-                      _hide.forward();
-                    },
-                  ),
-                ),
-              );
-              if (tabDef.index == _currentIndex) {
-                _faders[tabDef.index].forward();
-                return view;
-              } else {
-                _faders[tabDef.index].reverse();
-                if (_faders[tabDef.index].isAnimating) {
-                  return IgnorePointer(child: view);
+            top: false,
+            child: WillPopScope(
+              onWillPop: () async {
+                var navState = allTabDefinitions[_currentIndex].navigatorKey.currentState;
+                if (navState == null) {
+                  return Future<bool>.value(true);
                 }
-                return Offstage(child: view);
-              }
-            }).toList(),
-          ),
-        ),
+                if (navState.canPop()) {
+                    navState.maybePop();
+                    return Future<bool>.value(false);
+                }
+                return Future<bool>.value(true);
+              },
+              child: Stack(
+                fit: StackFit.expand,
+                children: allTabDefinitions.map((TabDefinition tabDef) {
+                  final Widget view = FadeTransition(
+                    opacity: _faders[tabDef.index].drive(CurveTween(curve: Curves.fastOutSlowIn)),
+                    child: KeyedSubtree(
+                      key: _destinationKeys[tabDef.index],
+                      child: TabDefinitionView(
+                        tabDefinition: tabDef,
+                        onNavigation: () {
+                          _hide.forward();
+                        },
+                      ),
+                    ),
+                  );
+                  if (tabDef.index == _currentIndex) {
+                    _faders[tabDef.index].forward();
+                    return view;
+                  } else {
+                    _faders[tabDef.index].reverse();
+                    if (_faders[tabDef.index].isAnimating) {
+                      return IgnorePointer(child: view);
+                    }
+                    return Offstage(child: view);
+                  }
+                }).toList(),
+              ),
+            )),
         bottomNavigationBar: ClipRect(
           child: SizeTransition(
             sizeFactor: _hide,
@@ -256,7 +279,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin<HomeP
   }
 }
 
-
+///
 class ViewNavigatorObserver extends NavigatorObserver {
   final VoidCallback onNavigation;
 
@@ -271,7 +294,7 @@ class ViewNavigatorObserver extends NavigatorObserver {
   }
 }
 
-
+///
 class TabDefinitionView extends StatefulWidget {
   final TabDefinition tabDefinition;
   final VoidCallback onNavigation;
@@ -282,13 +305,14 @@ class TabDefinitionView extends StatefulWidget {
   _DestinationViewState createState() => _DestinationViewState();
 }
 
-
+///
 class _DestinationViewState extends State<TabDefinitionView> {
   @override
   Widget build(BuildContext context) {
     print("_DestinationViewState widget.tabDef " + widget.tabDefinition.title);
 
     return Navigator(
+      key: widget.tabDefinition.navigatorKey,
       observers: <NavigatorObserver>[
         ViewNavigatorObserver(widget.onNavigation),
       ],

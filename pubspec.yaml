@@ -37,6 +37,8 @@ dependencies:
   settings_ui: ^1.0.0
   shared_preferences: ^2.0.6
   tuple: ^2.0.0
+  flutter_map: ^0.13.1
+  latlong2: ^0.8.0
 
 dev_dependencies:
   flutter_test:

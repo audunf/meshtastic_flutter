@@ -4,12 +4,16 @@ import 'dart:collection';
 import 'package:flutter/material.dart';
 import 'package:tuple/tuple.dart';
 
+/// Keeps track of tab definitions. Passed to actual tabs for configuration.
+/// A tab can have several screens/pages "under" it. For example, the "Settings" tab has sub-screens
+/// for choosing BT devices, settings user name, etc.
 class TabDefinition {
   final int index;
   final String title;
   final IconData icon;
   final MaterialColor color;
   final HashMap<String, Function> screens = new HashMap<String, Function>();
+  final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
   TabDefinition(this.index, this.title, this.icon, this.color, List<Tuple2<String, Function>> screenList) {
     for (var e in screenList) {
@@ -34,5 +38,4 @@ class TabDefinition {
       throw Exception("The route $routeParam not found when creating screen.");
     }
   }
-
 }

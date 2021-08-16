@@ -1,5 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.meshtastic.meshtastic_flutter">
+
+    <uses-permission android:name="android.permission.INTERNET"/> <!-- Required by: https://github.com/fleaflet/flutter_map -->
+
    <application
         android:label="meshtastic_flutter"
         android:icon="@mipmap/ic_launcher">

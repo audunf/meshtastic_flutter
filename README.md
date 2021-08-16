@@ -8,12 +8,6 @@ back button should pop local navigator stack only - not exit app. See this:
 https://stackoverflow.com/questions/56890424/use-nested-navigator-with-willpopscope-in-flutter
 
 TODO list:
-1. The BT device list should appear inside the BottomNavigationBar and with the same heading. Even though it's a separate screen.
-   https://stackoverflow.com/questions/55888715/how-to-persist-bottomnavigationbar-when-using-flutter-navigation-and-routes
-   https://medium.com/flutter/getting-to-the-bottom-of-navigation-in-flutter-b3e440b9386
-   https://gist.github.com/HansMuller/b189642d10fd236a41044fdf7626f7b0
-  
-
 
 1. Store SettingsModel data in 'shared_preferences'. Subscribe to changes.
 2. Populate SettingsModel data from 'shared_preferences' on app startup   
@@ -24,9 +18,6 @@ Put the read/write operations in a separate controlled outside of the BleDataStr
 - should re-structure BleDataStreams. Where should it
 
 
-Settings tab:
-  * Set "Your name"
-  * Region
 Chat:
   Not quite sure how it works with multiple channels active?
   Displays message, cloud icon, date/time, text
@@ -40,6 +31,9 @@ Channel config:
   Display the QR code with channel/encryption settings.
   Allow sharing of channel settings
   Interpret channel settings
+Settings tab:
+  Set "Your name" - DONE
+  Region - DONE
 
 - handle disconnects too
 - make a proper state machine?

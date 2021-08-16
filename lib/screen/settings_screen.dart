@@ -30,7 +30,7 @@ class SettingsScreen extends StatelessWidget {
                 title: 'Bluetooth',
                 tiles: [
                   SettingsTile.switchTile(
-                    title: 'Disconnect',
+                    title: 'Enable bluetooth',
                     leading: Icon(Icons.bluetooth),
                     switchValue: settingsModel.enableBluetooth,
                     onToggle: (bool value) {
@@ -47,20 +47,38 @@ class SettingsScreen extends StatelessWidget {
                     leading: Icon(Icons.bluetooth),
                     onPressed: (BuildContext ctx) {
                       Navigator.pushNamed(context, "/bluetoothDevices");
-                      /*
-                      Navigator.of(ctx).push(MaterialPageRoute(
-                        builder: (_) => BluetoothDeviceListScreen(tabDefinition: this.tabDefinition),
-                      ));
-                       */
                     },
                   ),
                 ],
               ),
+              SettingsSection(title: 'User', tiles: [
+                SettingsTile(
+                  leading: Icon(Icons.person),
+                  title: 'User name',
+                  subtitle: settingsModel.userName,
+                  enabled: settingsModel.enableBluetooth,
+                  onPressed: (BuildContext ctx) {
+                    Navigator.pushNamed(context, "/userName");
+                  },
+                ),
+              ]),
+              SettingsSection(title: 'Region', tiles: [
+                SettingsTile(
+                  leading: Icon(Icons.place),
+                  title: 'Region',
+                  subtitle: settingsModel.regionName,
+                  enabled: settingsModel.enableBluetooth,
+                  onPressed: (BuildContext ctx) {
+                    Navigator.pushNamed(context, "/selectRegion");
+                  },
+                ),
+              ])
             ],
           )));
 }
 
-// Show status message - or devices
+
+/// Show status message - or devices
 class BluetoothDeviceListScreen extends StatelessWidget {
   final TabDefinition tabDefinition;
 
@@ -76,6 +94,8 @@ class BluetoothDeviceListScreen extends StatelessWidget {
       );
 }
 
+
+///
 class _DeviceList extends StatefulWidget {
   const _DeviceList({required this.scannerState, required this.startScan, required this.stopScan});
 
@@ -87,6 +107,8 @@ class _DeviceList extends StatefulWidget {
   _DeviceListState createState() => _DeviceListState();
 }
 
+
+//
 class _DeviceListState extends State<_DeviceList> {
   @override
   void initState() {
@@ -132,6 +154,8 @@ class _DeviceListState extends State<_DeviceList> {
   }
 }
 
+
+///
 class BleStatusWidget extends StatelessWidget {
   const BleStatusWidget({required this.status, Key? key}) : super(key: key);
   final BleStatus status;
@@ -159,4 +183,50 @@ class BleStatusWidget extends StatelessWidget {
           child: Text(determineText(status)),
         ),
       );
+}
+
+
+///
+class EditUserNameScreen extends StatelessWidget {
+  final TabDefinition tabDefinition;
+  const EditUserNameScreen({Key? key, required this.tabDefinition}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) => Consumer<SettingsModel>(
+      builder: (ctx, settingsModel, __) => Scaffold(
+          body: Center(
+              child: TextFormField(
+                  autofocus: true,
+                  initialValue: settingsModel.userName,
+                  onFieldSubmitted: (text) {
+                    settingsModel.setUserName(text);
+                    Navigator.of(context).pop();
+                  }))));
+}
+
+
+///
+class SelectRegionScreen extends StatelessWidget {
+  final TabDefinition tabDefinition;
+  const SelectRegionScreen({Key? key, required this.tabDefinition}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) => Consumer<SettingsModel>(
+      builder: (ctx, settingsModel, __) => SettingsList(sections: [
+            SettingsSection(
+                title: 'Region',
+                tiles: Constants.regionCodes.entries
+                    .map((regionCode) => SettingsTile(
+                        title: regionCode.value,
+                        trailing: trailingWidget(regionCode.key, settingsModel.regionCode),
+                        onPressed: (BuildContext context) async {
+                          settingsModel.setRegionCode(regionCode.key);
+                          Navigator.of(context).pop();
+                        }))
+                    .toList())
+          ]));
+
+  Widget trailingWidget(regionCode, selectedRegionCode) {
+    return (regionCode == selectedRegionCode) ? Icon(Icons.check, color: Colors.blue) : Icon(null);
+  }
 }
