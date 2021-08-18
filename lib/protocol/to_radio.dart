@@ -1,15 +1,58 @@
 import 'package:meshtastic_flutter/proto-autogen/admin.pb.dart';
 import 'package:meshtastic_flutter/proto-autogen/mesh.pb.dart';
 import 'package:meshtastic_flutter/proto-autogen/portnums.pb.dart';
+import 'package:meshtastic_flutter/proto-autogen/radioconfig.pb.dart';
 
 class MakeToRadio {
   static List<int> sentPacketIdList = List.filled(0, 0, growable: true);
   static int currentPacketId = 0;
 
+  // Ask node for initial configuration
   static ToRadio wantConfig(int id) {
     ToRadio tr = new ToRadio();
     tr.wantConfigId = id;
     return tr;
+  }
+
+  // Make the node send RadioConfig in response
+  static ToRadio radioConfigRequest() {
+    AdminMessage a = AdminMessage.create();
+    a.getRadioRequest = true;
+    return wrapAdminMessage(a);
+  }
+
+  static ToRadio radioConfigConfirmSetChannel() {
+    AdminMessage a = AdminMessage.create();
+    a.confirmSetChannel = true;
+    return wrapAdminMessage(a);
+  }
+
+  static ToRadio radioConfigConfirmSetRadio() {
+    AdminMessage a = AdminMessage.create();
+    a.confirmSetRadio = true;
+    return wrapAdminMessage(a);
+  }
+
+  static ToRadio setOwnerAdminMessage(longName, shortName) {
+    User u = new User();
+    // u.id = what?! The MAC?
+    u.longName = longName;
+    u.shortName = shortName;
+    u.isLicensed = false;
+    AdminMessage a = new AdminMessage();
+    a.setOwner = u;
+    return wrapAdminMessage(a);
+  }
+
+  // lots of possibilities - not sure changing them is required
+  static ToRadio setRadioConfigUserPreferences() {
+    AdminMessage a = AdminMessage.create();
+    RadioConfig r = RadioConfig.create();
+    a.setRadio = r;
+    //r.preferences.positionBroadcastSecs
+    //r.preferences.send_owner_interval
+    // many, many more..
+    return wrapAdminMessage(a);
   }
 
   static ToRadio peerInfo(int appVer) {
@@ -39,7 +82,7 @@ class MakeToRadio {
     return tr;
   }
 
-  static decodedMeshPacket(PortNum portNum, int fromNodeId, int toNodeId, int channel, List<int> payload) {
+  static ToRadio decodedMeshPacket(PortNum portNum, int fromNodeId, int toNodeId, int channel, List<int> payload) {
     Data d = new Data();
     d.portnum = portNum;
     d.payload = payload;
@@ -50,7 +93,7 @@ class MakeToRadio {
     return tr;
   }
 
-  static wrapAdminMessage(AdminMessage a) {
+  static ToRadio wrapAdminMessage(AdminMessage a) {
     Data d = new Data();
     d.portnum = PortNum.ADMIN_APP;
     d.payload = a.writeToBuffer();
@@ -64,17 +107,5 @@ class MakeToRadio {
     tr.packet.decoded = d;
     return tr;
   }
-
-  static setOwnerAdminMessage(longName, shortName) {
-    User u = new User();
-    // u.id = what?! The MAC?
-    u.longName = longName;
-    u.shortName = shortName;
-    u.isLicensed = false;
-    AdminMessage a = new AdminMessage();
-    a.setOwner = u;
-    return wrapAdminMessage(a);
-  }
-
 
 }

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:meshtastic_flutter/widget/tab_definition.dart';
+import 'package:meshtastic_flutter/model/tab_definition.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
 import 'package:meshtastic_flutter/bluetooth/ble_scanner.dart';

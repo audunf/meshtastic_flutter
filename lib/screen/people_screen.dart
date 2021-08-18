@@ -1,26 +1,33 @@
 import 'package:flutter/material.dart';
-import 'package:meshtastic_flutter/widget/tab_definition.dart';
+import 'package:meshtastic_flutter/model/mesh_data_model.dart';
+import 'package:meshtastic_flutter/model/tab_definition.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
 import 'package:meshtastic_flutter/bluetooth/ble_scanner.dart';
 
-
 class PeopleScreen extends StatelessWidget {
   final TabDefinition tabDefinition;
 
-  const PeopleScreen({ Key? key, required this.tabDefinition }) : super(key: key);
+  const PeopleScreen({Key? key, required this.tabDefinition}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(tabDefinition.title),
-        backgroundColor: tabDefinition.color,
-      ),
-      backgroundColor: tabDefinition.color[50],
-      body: Center(
-        child:  Text('People screen xyz'),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => Consumer<MeshDataModel>(
+      builder: (ctx, meshDataModel, __) => Scaffold(
+          appBar: AppBar(
+            title: Text(tabDefinition.title),
+            backgroundColor: tabDefinition.color,
+          ),
+          backgroundColor: tabDefinition.color[50],
+          body: Center(
+              child: ListView(
+                  padding: const EdgeInsets.all(8),
+                  children: meshDataModel
+                      .getNodeInfoIterable()
+                      .map((nodeInfo) => ListTile(
+                        leading: FlutterLogo(size: 72.0),
+                        title: Text("Node num: ${nodeInfo.num}, SNR ${nodeInfo.snr}, last heard ${nodeInfo.lastHeard}"),
+                    subtitle: Text("Position: ${nodeInfo.position.latitudeI}, ${nodeInfo.position.longitudeI}, MAC: ${nodeInfo.user.macaddr}"),
+                    trailing: Icon(Icons.more_vert),
+                    isThreeLine: true,
+                  )).toList()))));
 }

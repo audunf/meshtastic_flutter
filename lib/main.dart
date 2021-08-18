@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:logger/logger.dart';
+import 'package:meshtastic_flutter/model/mesh_data_model.dart';
 import 'package:meshtastic_flutter/proto-autogen/mesh.pb.dart';
+import 'package:meshtastic_flutter/protocol/app_from_radio_handler.dart';
 import 'package:meshtastic_flutter/widget/bluetooth_connection_icon.dart';
-import 'package:meshtastic_flutter/widget/tab_definition.dart';
+import 'package:meshtastic_flutter/model/tab_definition.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
@@ -22,15 +24,13 @@ import 'screen/map_screen.dart';
 import 'screen/people_screen.dart';
 import 'screen/settings_screen.dart';
 
-/// Definition of screens and sub-screens with their routes
+/// Definition of tabs, their main screen, and sub-screens within each tab (and the navigator path of each)
+/// Note that the main tab screen should be the first one, and should have the route '/'
 List<TabDefinition> allTabDefinitions = <TabDefinition>[
   TabDefinition(0, 'Chat', Icons.chat, Colors.teal, [
     Tuple2('/', (tabDef) {
       return ChatScreen(tabDefinition: tabDef);
     }),
-    Tuple2('/foobar', (tabDef) {
-      return ChatScreen(tabDefinition: tabDef);
-    })
   ]),
   TabDefinition(1, 'People', Icons.people, Colors.cyan, [
     Tuple2('/', (tabDef) {
@@ -86,6 +86,7 @@ void main() async {
         ),
   );
   final _settings = SettingsModel();
+  final _meshDataModel = MeshDataModel();
   final _ble = FlutterReactiveBle();
   final _scanner = BleScanner(ble: _ble, logMessage: _logger.i);
   final _monitor = BleStatusMonitor(_ble);
@@ -101,11 +102,15 @@ void main() async {
     subscribeToCharacteristic: _ble.subscribeToCharacteristic,
     logMessage: _logger.i,
   );
-  final _bleDataStreams = BleDataStreams(deviceInteractor: _serviceDiscoverer, bleDeviceConnector: _connector, bleStatusMonitor: _monitor);
+  final _bleDataStreams =
+      BleDataStreams(deviceInteractor: _serviceDiscoverer, bleDeviceConnector: _connector, bleStatusMonitor: _monitor); // raw and FromRadio data streams
+  final _fromRadioHandler = AppFromRadioHandler(
+      bleDataStreams: _bleDataStreams, settingsModel: _settings, meshDataModel: _meshDataModel); // populates data models based on FromRadio packets
 
   runApp(MultiProvider(
     providers: [
       ChangeNotifierProvider.value(value: _settings),
+      ChangeNotifierProvider.value(value: _meshDataModel),
       Provider.value(value: _monitor),
       Provider.value(value: _connector),
       Provider.value(value: _serviceDiscoverer),
@@ -146,10 +151,14 @@ class MeshtasticApp extends StatelessWidget {
       title: 'Meshtastic',
       color: Colors.blue,
       theme: ThemeData(
+        textTheme:
+            TextTheme(caption: TextStyle(color: Colors.black38), subtitle2: TextStyle(color: Colors.black54), headline6: TextStyle(color: Colors.black87)),
         primarySwatch: Colors.blue,
         brightness: Brightness.light,
       ),
       darkTheme: ThemeData(
+        textTheme:
+            TextTheme(caption: TextStyle(color: Colors.white38), subtitle2: TextStyle(color: Colors.white54), headline6: TextStyle(color: Colors.white70)),
         primarySwatch: Colors.deepPurple,
         accentColor: Colors.deepPurple,
         brightness: Brightness.dark,
@@ -224,8 +233,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin<HomeP
                   return Future<bool>.value(true);
                 }
                 if (navState.canPop()) {
-                    navState.maybePop();
-                    return Future<bool>.value(false);
+                  navState.maybePop();
+                  return Future<bool>.value(false);
                 }
                 return Future<bool>.value(true);
               },
@@ -322,25 +331,6 @@ class _DestinationViewState extends State<TabDefinitionView> {
           builder: (BuildContext context) {
             // This calls either default route ("/"), or other named routes defined under a tab - it should enable navigation with state "inside" a tab
             return widget.tabDefinition.createScreen(settings.name, widget.tabDefinition);
-/*
-            switch (settings.name) {
-              case '/':
-                return RootPage(tabDefinition: widget.tabDefinition);
-              case '/chat':
-                return ChatScreen(tabDefinition: widget.tabDefinition);
-              case '/people':
-                return PeopleScreen(tabDefinition: widget.tabDefinition);
-              case '/map':
-                return MapScreen(tabDefinition: widget.tabDefinition);
-              case '/channel':
-                return ChannelScreen(tabDefinition: widget.tabDefinition);
-              case '/settings':
-                return SettingsScreen(tabDefinition: widget.tabDefinition);
-              default:
-                return SettingsScreen(tabDefinition: widget.tabDefinition);
-            }
-
- */
           },
         );
       },

@@ -4,15 +4,19 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
 import 'package:meshtastic_flutter/constants.dart' as Constants;
 
+/// Settings related to the app itself and to the connected node.
 class SettingsModel extends ChangeNotifier {
-  bool _enableBluetooth = false;
+  bool _bluetoothEnabled = false;
   String _bluetoothDeviceId = "None";
   String _bluetoothDeviceName = "None";
-  String _userName = "Unknown"; 
-  int _regionCode = 0;
 
-  bool get enableBluetooth {
-    return _enableBluetooth;
+  int _myNodeNum = 0;
+  int _regionCode = 0;
+  String _userLongName = "Unknown";
+  String _userShortName = "Unknown";
+
+  bool get bluetoothEnabled {
+    return _bluetoothEnabled;
   }
 
   String get bluetoothDeviceId {
@@ -23,20 +27,28 @@ class SettingsModel extends ChangeNotifier {
     return _bluetoothDeviceName;
   }
 
-  String get userName {
-    return _userName;
+  String get userLongName {
+    return _userLongName;
+  }
+
+  String get userShortName {
+    return _userShortName;
   }
 
   int get regionCode {
     return _regionCode;
   }
 
+  int get myNodeNum {
+    return _myNodeNum;
+  }
+
   String get regionName {
     return Constants.regionCodes[_regionCode] ?? 'Unset';
   }
 
-  setEnableBluetooth(bool b) {
-    _enableBluetooth = b;
+  setBluetoothEnabled(bool b) {
+    _bluetoothEnabled = b;
     notifyListeners();
   }
 
@@ -50,8 +62,13 @@ class SettingsModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  setUserName(String s) {
-    _userName = s;
+  setUserLongName(String s) {
+    _userLongName = s;
+    notifyListeners();
+  }
+
+  setUserShortName(String s) {
+    _userShortName = s;
     notifyListeners();
   }
 
@@ -61,4 +78,10 @@ class SettingsModel extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  setMyNodeNum(int num) {
+    _myNodeNum = num;
+    notifyListeners();
+  }
+
 }

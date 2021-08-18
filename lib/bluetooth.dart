@@ -6,7 +6,6 @@ import 'package:meshtastic_flutter/proto-autogen/admin.pb.dart';
 import 'package:meshtastic_flutter/proto-autogen/portnums.pb.dart';
 import 'package:meshtastic_flutter/proto-autogen/mesh.pb.dart';
 import 'package:meshtastic_flutter/protocol/to_radio.dart';
-import 'package:meshtastic_flutter/protocol/from_radio_parser.dart';
 import 'package:meshtastic_flutter/constants.dart' as Constant;
 
 
@@ -14,7 +13,7 @@ class Bluetooth extends ChangeNotifier {
   final ble =  FlutterReactiveBle();
   BleStatus _bleStatus = BleStatus.unknown;
   DeviceConnectionState _connectionState = DeviceConnectionState.disconnected;
-  final _parser = new FromRadioParser();
+  //final _parser = new FromRadioParser();
 
   Bluetooth();
 
@@ -104,7 +103,7 @@ class Bluetooth extends ChangeNotifier {
         print("end of data");
         break;
       }
-      _parser.handleFromRadioBuffer(buf);
+      // _parser.handleFromRadioBuffer(buf);
     } while(true);
 
   }

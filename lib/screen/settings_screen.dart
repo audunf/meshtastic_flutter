@@ -5,7 +5,7 @@ import 'package:meshtastic_flutter/constants.dart' as Constants;
 import 'package:meshtastic_flutter/model/settings_model.dart';
 import 'package:meshtastic_flutter/proto-autogen/mesh.pb.dart';
 import 'package:meshtastic_flutter/protocol/to_radio.dart';
-import 'package:meshtastic_flutter/widget/tab_definition.dart';
+import 'package:meshtastic_flutter/model/tab_definition.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
 import 'package:settings_ui/settings_ui.dart';
@@ -32,9 +32,9 @@ class SettingsScreen extends StatelessWidget {
                   SettingsTile.switchTile(
                     title: 'Enable bluetooth',
                     leading: Icon(Icons.bluetooth),
-                    switchValue: settingsModel.enableBluetooth,
+                    switchValue: settingsModel.bluetoothEnabled,
                     onToggle: (bool value) {
-                      settingsModel.setEnableBluetooth(value);
+                      settingsModel.setBluetoothEnabled(value);
                       if (settingsModel.bluetoothDeviceId != "None") {
                         bleConnector.connect(settingsModel.bluetoothDeviceId);
                       }
@@ -42,7 +42,7 @@ class SettingsScreen extends StatelessWidget {
                   ),
                   SettingsTile(
                     title: 'Device',
-                    enabled: settingsModel.enableBluetooth,
+                    enabled: settingsModel.bluetoothEnabled,
                     subtitle: settingsModel.bluetoothDeviceName + ", " + settingsModel.bluetoothDeviceId,
                     leading: Icon(Icons.bluetooth),
                     onPressed: (BuildContext ctx) {
@@ -55,8 +55,8 @@ class SettingsScreen extends StatelessWidget {
                 SettingsTile(
                   leading: Icon(Icons.person),
                   title: 'User name',
-                  subtitle: settingsModel.userName,
-                  enabled: settingsModel.enableBluetooth,
+                  subtitle: settingsModel.userLongName,
+                  enabled: settingsModel.bluetoothEnabled,
                   onPressed: (BuildContext ctx) {
                     Navigator.pushNamed(context, "/userName");
                   },
@@ -67,7 +67,7 @@ class SettingsScreen extends StatelessWidget {
                   leading: Icon(Icons.place),
                   title: 'Region',
                   subtitle: settingsModel.regionName,
-                  enabled: settingsModel.enableBluetooth,
+                  enabled: settingsModel.bluetoothEnabled,
                   onPressed: (BuildContext ctx) {
                     Navigator.pushNamed(context, "/selectRegion");
                   },
@@ -197,9 +197,9 @@ class EditUserNameScreen extends StatelessWidget {
           body: Center(
               child: TextFormField(
                   autofocus: true,
-                  initialValue: settingsModel.userName,
+                  initialValue: settingsModel.userLongName,
                   onFieldSubmitted: (text) {
-                    settingsModel.setUserName(text);
+                    settingsModel.setUserLongName(text);
                     Navigator.of(context).pop();
                   }))));
 }

@@ -39,8 +39,7 @@ class BleDeviceInteractor {
   Future<List<int>> readCharacteristic(QualifiedCharacteristic characteristic) async {
     try {
       final result = await _readCharacteristic(characteristic);
-
-      _logMessage('Read ${characteristic.characteristicId}: value = $result');
+      //_logMessage('Read ${characteristic.characteristicId}: value = $result');
       return result;
     } on Exception catch (e, s) {
       _logMessage(
@@ -53,7 +52,7 @@ class BleDeviceInteractor {
 
   Future<void> writeCharacteristicWithResponse(QualifiedCharacteristic characteristic, List<int> value) async {
     try {
-      _logMessage('Write with response value : $value to ${characteristic.characteristicId}');
+      //_logMessage('Write with response value : $value to ${characteristic.characteristicId}');
       await _writeWithResponse(characteristic, value: value);
     } on Exception catch (e, s) {
       _logMessage(
@@ -67,7 +66,7 @@ class BleDeviceInteractor {
   Future<void> writeCharacteristicWithoutResponse(QualifiedCharacteristic characteristic, List<int> value) async {
     try {
       await _writeWithoutResponse(characteristic, value: value);
-      _logMessage('Write without response value: $value to ${characteristic.characteristicId}');
+      //_logMessage('Write without response value: $value to ${characteristic.characteristicId}');
     } on Exception catch (e, s) {
       _logMessage(
         'Error occurred when writing ${characteristic.characteristicId} : $e',
