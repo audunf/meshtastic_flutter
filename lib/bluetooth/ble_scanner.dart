@@ -30,14 +30,15 @@ class BleScanner implements ReactiveState<BleScannerState> {
     required FlutterReactiveBle ble,
     required Function(String message) logMessage,
   })  : _ble = ble,
-        _logMessage = logMessage {
-  }
+        _logMessage = logMessage;
 
-  void startScan(List<Uuid> serviceIds) {
-    _logMessage('Start ble discovery');
+  void startScan(List<Uuid> serviceIds, ScanMode scanMode) {
+    _logMessage('Start BLE discovery');
+
     _devices.clear();
     _subscription?.cancel();
-    _subscription = _ble.scanForDevices(withServices: serviceIds).listen((device) {
+
+    _subscription = _ble.scanForDevices(withServices: serviceIds, scanMode: scanMode).listen((device) {
       final knownDeviceIndex = _devices.indexWhere((d) => d.id == device.id);
       if (knownDeviceIndex >= 0) {
         _devices[knownDeviceIndex] = device;
@@ -59,7 +60,7 @@ class BleScanner implements ReactiveState<BleScannerState> {
   }
 
   Future<void> stopScan() async {
-    _logMessage('stopScan - stop ble discovery');
+    _logMessage('stopScan - stop BLE discovery');
     await _subscription?.cancel();
     _subscription = null;
     _pushState();

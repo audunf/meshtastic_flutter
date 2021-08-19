@@ -14,50 +14,58 @@ class BleDataStreams {
   BleStatusMonitor _bleStatusMonitor;
   BleDeviceConnector _bleDeviceConnector;
 
-  StreamController<List<int>> _rawFromRadioStream = StreamController.broadcast(); // bytes from the radio
-  StreamController<FromRadio> _fromRadioStream = StreamController.broadcast(); // FromRadio packets from the radio
-
+  Stream<List<int>>? _readNotifyWriteStream;
+  StreamSubscription<List<int>>? _readNotifyWriteSubscription;
+  
+  StreamController<List<int>> _rawFromRadioStreamController = StreamController.broadcast(); // bytes from the radio
+  StreamController<FromRadio> _fromRadioStreamController = StreamController.broadcast(); // FromRadio packets from the radio
+  
   BleDataStreams({required BleStatusMonitor bleStatusMonitor, required BleDeviceConnector bleDeviceConnector, required BleDeviceInteractor deviceInteractor})
       : _deviceInteractor = deviceInteractor,
         _bleStatusMonitor = bleStatusMonitor,
         _bleDeviceConnector = bleDeviceConnector {
     // func body
-    _bleStatusMonitor.state.listen(bleStatusHandler);
-    _bleDeviceConnector.state.listen(connectionStateUpdate);
-  }
+    _bleStatusMonitor.state.listen(_bleStatusHandler);
+    _bleDeviceConnector.state.listen(_connectionStateUpdateHandler);
 
-  /// called whenever BLE status changes
-  bleStatusHandler(BleStatus status) {
-    print("bleStatusHandler status=" + status.toString());
-  }
-
-  /// called whenever connection state changes
-  connectionStateUpdate(ConnectionStateUpdate u) {
-    print("connectionStateUpdate=" + u.toString());
-    if (u.connectionState == DeviceConnectionState.connected) { // on new connection, initialize data streams
-      _initStreams(u.deviceId);
-    }
-
-    if (u.connectionState == DeviceConnectionState.disconnecting) {
-      _closeStreams();
-    }
-  }
-
-  /// initialize streams and ask for initial configuration. This happens whenever we've just connected to a device
-  _initStreams(String deviceId) async {
-    print("_initStreams with deviceId=" + deviceId);
-    StreamTransformer<List<int>, FromRadio> radioTransformer = new StreamTransformer.fromHandlers(handleData: (List<int> data, EventSink<FromRadio> output) {
+    StreamTransformer<List<int>, FromRadio> radioTransformer = StreamTransformer.fromHandlers(handleData: (List<int> data, EventSink<FromRadio> output) async {
       FromRadio fr = FromRadio.fromBuffer(data);
       output.add(fr);
     });
+    _rawFromRadioStreamController.stream.transform(radioTransformer).pipe(_fromRadioStreamController); // Hook up streams: Raw data stream -> FromRadio -> pipe -> fromRadioStream
+  }
 
-    _rawFromRadioStream.stream.transform(radioTransformer).pipe(_fromRadioStream); // Hook up streams: Raw data stream -> FromRadio -> pipe -> fromRadioStream
+  /// called whenever BLE status changes
+  _bleStatusHandler(BleStatus status) {
+    print("BleDataStreams::bleStatusHandler status=" + status.toString());
+  }
 
-    // TODO: Consider making this into a transformer with a separate output stream once the format is known/understood
-    _deviceInteractor.subScribeToCharacteristic(getCharacteristic(deviceId, Constants.readNotifyWriteCharacteristicId)).listen((List<int> data) {
-      print("GOT data on readNotifyWriteCharacteristicId " + data.toString()); // this prints: [1, 0, 0, 0]
-      readResponseUntilEmpty(deviceId); // read until empty
-    });
+  /// called whenever connection state changes
+  _connectionStateUpdateHandler(ConnectionStateUpdate u) async {
+    print("BleDataStreams::_connectionStateUpdate = " + u.toString());
+    if (u.connectionState == DeviceConnectionState.connected) { // on new connection, initialize data streams
+      await _onConnectedHandler(u.deviceId);
+    } else if (u.connectionState == DeviceConnectionState.disconnected) {
+      await _onDisconnectHandler(u.deviceId);
+    }
+  }
+
+  /// This happens whenever we've just connected to a device
+  _onConnectedHandler(String deviceId) async {
+    print("_onConnectedHandler with deviceId = " + deviceId);
+
+    await _readNotifyWriteSubscription?.cancel();
+    _readNotifyWriteStream = _deviceInteractor.subScribeToCharacteristic(getCharacteristic(deviceId, Constants.readNotifyWriteCharacteristicId)).asBroadcastStream();
+    _readNotifyWriteSubscription = _readNotifyWriteStream?.listen((List<int> data) {
+      Function.apply(_onReadNotifyWriteHandler, [deviceId, data]);
+    }, onError: (err, stack) async {
+      // TODO: Exception always occurs when: 1) node disconnects, 2) phone reconnects. If phone disconnects first - there's no exception.
+      print("_readNotifyWriteSubscription - error " + err.toString());
+      await _readNotifyWriteSubscription?.cancel();
+
+    }, onDone: () {
+      print("_readNotifyWriteSubscription - DONE");
+    }, cancelOnError: true);
 
     // ask for config from node. Might be better places to put this later
     int configId = DateTime.now().millisecondsSinceEpoch ~/ 1000; // unique number - sent back in config_complete_id (allow to discard old/stale)
@@ -68,6 +76,18 @@ class BleDataStreams {
     print("radioConfigRequest with deviceId=" + deviceId);
     pkt = MakeToRadio.radioConfigRequest();
     await writeAndReadResponseUntilEmpty(deviceId, pkt);
+  }
+
+  _onDisconnectHandler(String deviceId) async {
+    print("_onDisconnectHandler with deviceId = " + deviceId);
+    await _readNotifyWriteSubscription?.cancel();
+    _readNotifyWriteSubscription = null;
+  }
+
+  /// when device signals data is available (app has explicitly subscribed)
+  _onReadNotifyWriteHandler(deviceId, List<int> data) {
+    print("GOT data on readNotifyWriteCharacteristicId " + data.toString()); // this prints: [1, 0, 0, 0], sometimes [2, 0, 0, 0]
+    readResponseUntilEmpty(deviceId); // read until empty
   }
 
   /// write a ToRadio packet, and keep reading responses until empty
@@ -84,32 +104,31 @@ class BleDataStreams {
     while (!isEmpty) {
       List<int> buf = await _deviceInteractor.readCharacteristic(readC);
       isEmpty = buf.isEmpty;
-      if (!isEmpty) _rawFromRadioStream.sink.add(buf);
+      if (!isEmpty) _rawFromRadioStreamController.sink.add(buf);
     }
-
   }
 
   /// getter for raw stream of bytes
   Stream<List<int>> get rawFromRadioStream {
-    return _rawFromRadioStream.stream;
+    return _rawFromRadioStreamController.stream;
   }
 
   /// getter for FromRadio object stream
   Stream<FromRadio> get fromRadioStream {
-    return _fromRadioStream.stream;
+    return _fromRadioStreamController.stream;
   }
 
   getCharacteristic(deviceIdParam, characteristicIdParam) {
     return QualifiedCharacteristic(serviceId: Constants.meshtasticServiceId, characteristicId: characteristicIdParam, deviceId: deviceIdParam);
   }
 
-  void _closeStreams() {
+  _closeStreams() async {
     print("_closeStreams");
-    if (!_fromRadioStream.isClosed) _fromRadioStream.close();
-    if (!_rawFromRadioStream.isClosed) _rawFromRadioStream.close();
+    if (!_fromRadioStreamController.isClosed) await _fromRadioStreamController.close();
+    if (!_rawFromRadioStreamController.isClosed) await _rawFromRadioStreamController.close();
   }
 
-  void dispose() {
-    _closeStreams();
+  dispose() async {
+    await _closeStreams();
   }
 }

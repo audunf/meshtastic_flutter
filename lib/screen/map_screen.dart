@@ -18,7 +18,7 @@ class MapScreen extends StatelessWidget {
           title: Text(tabDefinition.title),
           backgroundColor: tabDefinition.color,
         ),
-        backgroundColor: tabDefinition.color[50],
+        //backgroundColor: tabDefinition.color[50],
         body: Center(
             child: FlutterMap(
           options: MapOptions(

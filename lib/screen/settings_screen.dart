@@ -23,7 +23,7 @@ class SettingsScreen extends StatelessWidget {
             title: Text(tabDefinition.title),
             backgroundColor: tabDefinition.color,
           ),
-          backgroundColor: tabDefinition.color[50],
+          //backgroundColor: tabDefinition.color[50],
           body: SettingsList(
             sections: [
               SettingsSection(
@@ -33,10 +33,14 @@ class SettingsScreen extends StatelessWidget {
                     title: 'Enable bluetooth',
                     leading: Icon(Icons.bluetooth),
                     switchValue: settingsModel.bluetoothEnabled,
-                    onToggle: (bool value) {
+                    onToggle: (bool value) async {
                       settingsModel.setBluetoothEnabled(value);
-                      if (settingsModel.bluetoothDeviceId != "None") {
+                      if (value == true && settingsModel.bluetoothDeviceId == "Unknown") {
+                        Navigator.pushNamed(context, "/selectBluetoothDevice");
+                      } else if (value == true && settingsModel.bluetoothDeviceId != "Unknown") {
                         bleConnector.connect(settingsModel.bluetoothDeviceId);
+                      } else if (value == false && settingsModel.bluetoothDeviceId != "Unknown") {
+                        bleConnector.disconnect(settingsModel.bluetoothDeviceId);
                       }
                     },
                   ),
@@ -46,7 +50,7 @@ class SettingsScreen extends StatelessWidget {
                     subtitle: settingsModel.bluetoothDeviceName + ", " + settingsModel.bluetoothDeviceId,
                     leading: Icon(Icons.bluetooth),
                     onPressed: (BuildContext ctx) {
-                      Navigator.pushNamed(context, "/bluetoothDevices");
+                      Navigator.pushNamed(context, "/selectBluetoothDevice");
                     },
                   ),
                 ],
@@ -79,10 +83,10 @@ class SettingsScreen extends StatelessWidget {
 
 
 /// Show status message - or devices
-class BluetoothDeviceListScreen extends StatelessWidget {
+class SelectBluetoothDeviceScreen extends StatelessWidget {
   final TabDefinition tabDefinition;
 
-  const BluetoothDeviceListScreen({Key? key, required this.tabDefinition}) : super(key: key);
+  const SelectBluetoothDeviceScreen({Key? key, required this.tabDefinition}) : super(key: key);
 
   @override
   Widget build(BuildContext context) => Consumer2<BleScanner, BleScannerState>(
@@ -97,18 +101,18 @@ class BluetoothDeviceListScreen extends StatelessWidget {
 
 ///
 class _DeviceList extends StatefulWidget {
-  const _DeviceList({required this.scannerState, required this.startScan, required this.stopScan});
-
   final BleScannerState scannerState;
-  final void Function(List<Uuid>) startScan;
+  final void Function(List<Uuid>, ScanMode) startScan;
   final VoidCallback stopScan;
+
+  const _DeviceList({required this.scannerState, required this.startScan, required this.stopScan});
 
   @override
   _DeviceListState createState() => _DeviceListState();
 }
 
 
-//
+///
 class _DeviceListState extends State<_DeviceList> {
   @override
   void initState() {
@@ -123,7 +127,7 @@ class _DeviceListState extends State<_DeviceList> {
   }
 
   void _startScanning() {
-    widget.startScan(<Uuid>[Constants.meshtasticServiceId]);
+    widget.startScan(<Uuid>[Constants.meshtasticServiceId], ScanMode.balanced);
   }
 
   @override

@@ -17,13 +17,15 @@ class PeopleScreen extends StatelessWidget {
             title: Text(tabDefinition.title),
             backgroundColor: tabDefinition.color,
           ),
-          backgroundColor: tabDefinition.color[50],
+          //backgroundColor: tabDefinition.color[50],
           body: Center(
               child: ListView(
                   padding: const EdgeInsets.all(8),
                   children: meshDataModel
                       .getNodeInfoIterable()
                       .map((nodeInfo) => ListTile(
+                        dense: true,
+                        tileColor: Colors.white60,
                         leading: FlutterLogo(size: 72.0),
                         title: Text("Node num: ${nodeInfo.num}, SNR ${nodeInfo.snr}, last heard ${nodeInfo.lastHeard}"),
                     subtitle: Text("Position: ${nodeInfo.position.latitudeI}, ${nodeInfo.position.longitudeI}, MAC: ${nodeInfo.user.macaddr}"),

@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:logger/logger.dart';
@@ -51,8 +53,8 @@ List<TabDefinition> allTabDefinitions = <TabDefinition>[
     Tuple2('/', (tabDef) {
       return SettingsScreen(tabDefinition: tabDef);
     }),
-    Tuple2('/bluetoothDevices', (tabDef) {
-      return BluetoothDeviceListScreen(tabDefinition: tabDef);
+    Tuple2('/selectBluetoothDevice', (tabDef) {
+      return SelectBluetoothDeviceScreen(tabDefinition: tabDef);
     }),
     Tuple2('/userName', (tabDef) {
       return EditUserNameScreen(tabDefinition: tabDef);
@@ -63,7 +65,10 @@ List<TabDefinition> allTabDefinitions = <TabDefinition>[
   ])
 ];
 
+
+///
 /// MAIN
+///
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -86,6 +91,8 @@ void main() async {
         ),
   );
   final _settings = SettingsModel();
+  await _settings.initializeSettingsFromStorage();  // read initial settings from storage
+
   final _meshDataModel = MeshDataModel();
   final _ble = FlutterReactiveBle();
   final _scanner = BleScanner(ble: _ble, logMessage: _logger.i);
@@ -102,6 +109,7 @@ void main() async {
     subscribeToCharacteristic: _ble.subscribeToCharacteristic,
     logMessage: _logger.i,
   );
+
   final _bleDataStreams =
       BleDataStreams(deviceInteractor: _serviceDiscoverer, bleDeviceConnector: _connector, bleStatusMonitor: _monitor); // raw and FromRadio data streams
   final _fromRadioHandler = AppFromRadioHandler(
@@ -175,8 +183,9 @@ class HomePage extends StatefulWidget {
 }
 
 /// State of the HomePage
-class _HomePageState extends State<HomePage> with TickerProviderStateMixin<HomePage> {
+class _HomePageState extends State<HomePage> with TickerProviderStateMixin<HomePage>, WidgetsBindingObserver {
   int _currentIndex = 0;
+  AppLifecycleState _appLifecycleState = AppLifecycleState.detached;
   late AnimationController _hide;
   late List<AnimationController> _faders;
   List<Key> _destinationKeys = List<Key>.generate(allTabDefinitions.length, (int index) => GlobalKey()).toList();
@@ -184,6 +193,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin<HomeP
   @override
   void initState() {
     super.initState();
+
+    WidgetsBinding.instance?.addObserver(this);
 
     _faders = allTabDefinitions.map<AnimationController>((TabDefinition destination) {
       return AnimationController(vsync: this, duration: Duration(milliseconds: 200));
@@ -195,9 +206,29 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin<HomeP
 
   @override
   void dispose() {
+    WidgetsBinding.instance?.removeObserver(this);
+
     for (AnimationController controller in _faders) controller.dispose();
     _hide.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    setState(() {
+      _appLifecycleState = state;
+    });
+    switch(state) {
+      case AppLifecycleState.paused:
+        break;
+      case AppLifecycleState.detached:
+        break;
+      case AppLifecycleState.inactive:
+        break;
+      case AppLifecycleState.resumed:
+        break;
+    }
+    print('AppLifecycleState state:  $state');
   }
 
   bool _handleScrollNotification(ScrollNotification notification) {
@@ -316,10 +347,14 @@ class TabDefinitionView extends StatefulWidget {
 
 ///
 class _DestinationViewState extends State<TabDefinitionView> {
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
-    print("_DestinationViewState widget.tabDef " + widget.tabDefinition.title);
-
     return Navigator(
       key: widget.tabDefinition.navigatorKey,
       observers: <NavigatorObserver>[

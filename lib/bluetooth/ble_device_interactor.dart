@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
 
 class BleDeviceInteractor {
+
   BleDeviceInteractor({
     required Future<List<DiscoveredService>> Function(String deviceId) bleDiscoverServices,
     required Future<List<int>> Function(QualifiedCharacteristic characteristic) readCharacteristic,

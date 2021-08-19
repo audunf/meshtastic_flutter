@@ -185,6 +185,14 @@ class AppFromRadioHandler {
   _handlePositionPortNum(buf) {
     Position p = Position.fromBuffer(buf);
     print("*** handlePositionPortNum: " + p.toString());
+    // update POSITION of the local node!
+    /*
+    ** handlePositionPortNum: latitudeI: 599667403
+I/flutter (19407): longitudeI: 106456274
+I/flutter (19407): altitude: 247
+I/flutter (19407): batteryLevel: 69
+I/flutter (19407): time: 1629368767
+     */
     return p;
   }
 

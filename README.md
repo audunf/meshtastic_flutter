@@ -3,9 +3,6 @@ Routes and keeping the app bar/bottom nav bar:
 https://stackoverflow.com/questions/66755344/flutter-navigation-push-while-keeping-the-same-appbar
 
 # TODO 
-Seach for: flutter WillPopscope navigator
-back button should pop local navigator stack only - not exit app. See this: 
-https://stackoverflow.com/questions/56890424/use-nested-navigator-with-willpopscope-in-flutter
 
 TODO list:
 
@@ -43,6 +40,9 @@ Sequence will be:
 1. application scans for available devices
 2. User selects a device
 3. Download the NodeDB database
+
+## Future ideas
+* While not connected: Scan in 'opportunistic' mode. Connect if there is a scan result which matches the selected BT device ID 
 
 
 # State handling
@@ -235,3 +235,177 @@ I/flutter (12939): *** TEXT MESSAGE: [107, 100, 107, 100, 107, 100, 107, 107, 10
 ----------------
 With error: 
 
+I/flutter (19414): bleStatusHandler status=BleStatus.unknown
+I/flutter (19414): bleStatusHandler status=BleStatus.ready
+I/flutter (19414): ┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+I/flutter (19414): │ 💡 Start connecting to 08:3A:F2:44:BB:0A
+I/flutter (19414): └───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+D/BluetoothAdapter(19414): isLeEnabled(): ON
+D/BluetoothLeScanner(19414): onScannerRegistered() - status=0 scannerId=10 mScannerId=0
+W/BluetoothAdapter(19414): getBluetoothService(), client: android.bluetooth.BluetoothDevice$1@1dc65b1
+I/flutter (19414): ┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+I/flutter (19414): │ 💡 Start connecting to 08:3A:F2:44:BB:0A
+I/flutter (19414): └───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+D/BluetoothAdapter(19414): isLeEnabled(): ON
+D/BluetoothGatt(19414): connect() - device: 08:3A:F2:44:BB:0A, auto: false
+D/BluetoothGatt(19414): registerApp()
+D/BluetoothGatt(19414): registerApp() - UUID=7d7b71b8-7068-4a9b-9bfc-4803ca1b2c1f
+I/flutter (19414): ┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+I/flutter (19414): │ 💡 ConnectionState for device 08:3A:F2:44:BB:0A : DeviceConnectionState.connecting
+I/flutter (19414): └───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+D/BluetoothGatt(19414): onClientRegistered() - status=0 clientIf=10
+I/flutter (19414): ┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+I/flutter (19414): │ 💡 ConnectionState for device 08:3A:F2:44:BB:0A : DeviceConnectionState.connecting
+I/flutter (19414): └───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+D/BluetoothGatt(19414): onClientConnectionState() - status=0 clientIf=10 device=08:3A:F2:44:BB:0A
+I/flutter (19414): ┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+I/flutter (19414): │ 💡 ConnectionState for device 08:3A:F2:44:BB:0A : DeviceConnectionState.connected
+I/flutter (19414): └───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+I/flutter (19414): ┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+I/flutter (19414): │ 💡 ConnectionState for device 08:3A:F2:44:BB:0A : DeviceConnectionState.connected
+I/flutter (19414): └───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+D/BluetoothGatt(19414): configureMTU() - device: 08:3A:F2:44:BB:0A mtu: 500
+D/BluetoothGatt(19414): onConfigureMTU() - Device=08:3A:F2:44:BB:0A mtu=500 status=0
+D/BluetoothGatt(19414): configureMTU() - device: 08:3A:F2:44:BB:0A mtu: 500
+I/flutter (19414): connectionStateUpdate=ConnectionStateUpdate(deviceId: 08:3A:F2:44:BB:0A, connectionState: DeviceConnectionState.connected, failure: null)
+I/flutter (19414): _initStreams with deviceId=08:3A:F2:44:BB:0A
+I/flutter (19414): ┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+I/flutter (19414): │ 💡 Subscribing to: ed9da18c-a800-4f66-a670-aa7547e34453
+I/flutter (19414): └───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+I/flutter (19414): readNodeDB with deviceId=08:3A:F2:44:BB:0A
+D/BluetoothGatt(19414): onConfigureMTU() - Device=08:3A:F2:44:BB:0A mtu=500 status=0
+I/flutter (19414): connectionStateUpdate=ConnectionStateUpdate(deviceId: 08:3A:F2:44:BB:0A, connectionState: DeviceConnectionState.connecting, failure: null)
+D/BluetoothGatt(19414): configureMTU() - device: 08:3A:F2:44:BB:0A mtu: 500
+D/BluetoothGatt(19414): onConfigureMTU() - Device=08:3A:F2:44:BB:0A mtu=500 status=0
+I/flutter (19414): connectionStateUpdate=ConnectionStateUpdate(deviceId: 08:3A:F2:44:BB:0A, connectionState: DeviceConnectionState.connecting, failure: null)
+D/BluetoothGatt(19414): configureMTU() - device: 08:3A:F2:44:BB:0A mtu: 500
+D/BluetoothGatt(19414): onConfigureMTU() - Device=08:3A:F2:44:BB:0A mtu=500 status=0
+I/flutter (19414): connectionStateUpdate=ConnectionStateUpdate(deviceId: 08:3A:F2:44:BB:0A, connectionState: DeviceConnectionState.connected, failure: null)
+I/flutter (19414): _initStreams with deviceId=08:3A:F2:44:BB:0A
+D/BluetoothGatt(19414): discoverServices() - device: 08:3A:F2:44:BB:0A
+D/BluetoothGatt(19414): onSearchComplete() = Device=08:3A:F2:44:BB:0A Status=0
+E/flutter (19414): [ERROR:flutter/lib/ui/ui_dart_state.cc(199)] Unhandled Exception: Bad state: Cannot add new events while doing an addStream
+E/flutter (19414): #0      _BroadcastStreamController.addStream (dart:async/broadcast_stream_controller.dart:276:24)
+E/flutter (19414): #1      Stream.pipe (dart:async/stream.dart:698:27)
+E/flutter (19414): #2      BleDataStreams._initStreams (package:meshtastic_flutter/bluetooth/ble_data_streams.dart:54:60)
+E/flutter (19414): #3      BleDataStreams.connectionStateUpdate (package:meshtastic_flutter/bluetooth/ble_data_streams.dart:38:7)
+E/flutter (19414): #4      _rootRunUnary (dart:async/zone.dart:1362:47)
+E/flutter (19414): #5      _CustomZone.runUnary (dart:async/zone.dart:1265:19)
+E/flutter (19414): #6      _CustomZone.runUnaryGuarded (dart:async/zone.dart:1170:7)
+E/flutter (19414): #7      _BufferingStreamSubscription._sendData (dart:async/stream_impl.dart:341:11)
+E/flutter (19414): #8      _DelayedData.perform (dart:async/stream_impl.dart:591:14)
+E/flutter (19414): #9      _StreamImplEvents.handleNext (dart:async/stream_impl.dart:706:11)
+E/flutter (19414): #10     _PendingEvents.schedule.<anonymous closure> (dart:async/stream_impl.dart:663:7)
+E/flutter (19414): #11     _rootRun (dart:async/zone.dart:1346:47)
+E/flutter (19414): #12     _CustomZone.run (dart:async/zone.dart:1258:19)
+E/flutter (19414): #13     _CustomZone.runGuarded (dart:async/zone.dart:1162:7)
+E/flutter (19414): #14     _CustomZone.bindCallbackGuarded.<anonymous closure> (dart:async/zone.dart:1202:23)
+E/flutter (19414): #15     _rootRun (dart:async/zone.dart:1354:13)
+E/flutter (19414): #16     _CustomZone.run (dart:async/zone.dart:1258:19)
+E/flutter (19414): #17     _CustomZone.runGuarded (dart:async/zone.dart:1162:7)
+E/flutter (19414): #18     _CustomZone.bindCallbackGuarded.<anonymous closure> (dart:async/zone.dart:1202:23)
+E/flutter (19414): #19     _microtaskLoop (dart:async/schedule_microtask.dart:40:21)
+E/flutter (19414): #20     _startMicrotaskLoop (dart:async/schedule_microtask.dart:49:5)
+E/flutter (19414):
+D/BluetoothGatt(19414): setCharacteristicNotification() - uuid: ed9da18c-a800-4f66-a670-aa7547e34453 enable: true
+I/flutter (19414): ** myNodeInfo myNodeNum: 4064590600
+I/flutter (19414): hasGps: true
+I/flutter (19414): numBands: 10
+I/flutter (19414): firmwareVersion: 1.2.43.bf0b598
+I/flutter (19414): rebootCount: 35
+I/flutter (19414): messageTimeoutMsec: 300000
+I/flutter (19414): minAppVersion: 20200
+I/flutter (19414): maxChannels: 8
+I/flutter (19414): ** nodeInfo num: 4064590600
+I/flutter (19414): user: {
+I/flutter (19414):   id: !f244bb08
+I/flutter (19414):   longName: Audun
+I/flutter (19414):   shortName: Adn
+I/flutter (19414):   macaddr: [8, 58, 242, 68, 187, 8]
+I/flutter (19414):   hwModel: TBEAM
+I/flutter (19414): }
+I/flutter (19414): position: {
+I/flutter (19414):   latitudeI: 599660992
+I/flutter (19414):   longitudeI: 106456240
+I/flutter (19414):   altitude: 332
+I/flutter (19414):   batteryLevel: 65
+I/flutter (19414):   time: 1629373747
+I/flutter (19414): }
+I/flutter (19414): lastHeard: 1629373747
+I/flutter (19414): ** nodeInfo num: 4064590588
+I/flutter (19414): user: {
+I/flutter (19414):   id: !f244bafc
+I/flutter (19414):   longName: Nudua
+I/flutter (19414):   shortName: Nud
+I/flutter (19414):   macaddr: [8, 58, 242, 68, 186, 252]
+I/flutter (19414):   hwModel: TBEAM
+I/flutter (19414): }
+I/flutter (19414): position: {
+I/flutter (19414):   batteryLevel: 100
+I/flutter (19414):   time: 1629230863
+I/flutter (19414): }
+I/flutter (19414): lastHeard: 1629230866
+I/flutter (19414): snr: 9.5
+I/flutter (19414): ** configCompleteId 1629373736
+I/flutter (19414): ** handleMeshPacket
+I/flutter (19414): *** handleNodeInfoPortNum: id: !f244bb08
+I/flutter (19414): longName: Audun
+I/flutter (19414): shortName: Adn
+I/flutter (19414): macaddr: [8, 58, 242, 68, 187, 8]
+I/flutter (19414): hwModel: TBEAM
+I/flutter (19414): ** handleMeshPacket
+I/flutter (19414): *** handlePositionPortNum: latitudeI: 599661198
+I/flutter (19414): longitudeI: 106457213
+I/flutter (19414): altitude: 256
+I/flutter (19414): batteryLevel: 69
+I/flutter (19414): time: 1629369680
+I/flutter (19414): ** handleMeshPacket
+I/flutter (19414): *** handleNodeInfoPortNum: id: !f244bb08
+I/flutter (19414): longName: Audun
+I/flutter (19414): shortName: Adn
+I/flutter (19414): macaddr: [8, 58, 242, 68, 187, 8]
+I/flutter (19414): hwModel: TBEAM
+I/flutter (19414): ** handleMeshPacket
+I/flutter (19414): *** handlePositionPortNum: latitudeI: 599661764
+I/flutter (19414): longitudeI: 106458742
+I/flutter (19414): altitude: 235
+I/flutter (19414): batteryLevel: 70
+I/flutter (19414): time: 1629370582
+I/flutter (19414): ** handleMeshPacket
+I/flutter (19414): *** handleNodeInfoPortNum: id: !f244bb08
+I/flutter (19414): longName: Audun
+I/flutter (19414): shortName: Adn
+I/flutter (19414): macaddr: [8, 58, 242, 68, 187, 8]
+I/flutter (19414): hwModel: TBEAM
+I/flutter (19414): ** handleMeshPacket
+I/flutter (19414): *** handlePositionPortNum: latitudeI: 599664380
+I/flutter (19414): longitudeI: 106455697
+I/flutter (19414): altitude: 231
+I/flutter (19414): batteryLevel: 69
+I/flutter (19414): time: 1629371484
+I/flutter (19414): ** handleMeshPacket
+I/flutter (19414): *** handleNodeInfoPortNum: id: !f244bb08
+I/flutter (19414): longName: Audun
+I/flutter (19414): shortName: Adn
+I/flutter (19414): macaddr: [8, 58, 242, 68, 187, 8]
+I/flutter (19414): hwModel: TBEAM
+I/flutter (19414): ** handleMeshPacket
+I/flutter (19414): *** handlePositionPortNum: latitudeI: 599663218
+I/flutter (19414): longitudeI: 106457882
+I/flutter (19414): altitude: 265
+I/flutter (19414): batteryLevel: 68
+I/flutter (19414): time: 1629372387
+I/flutter (19414): ** handleMeshPacket
+I/flutter (19414): *** handleNodeInfoPortNum: id: !f244bb08
+I/flutter (19414): longName: Audun
+I/flutter (19414): shortName: Adn
+I/flutter (19414): macaddr: [8, 58, 242, 68, 187, 8]
+I/flutter (19414): hwModel: TBEAM
+I/flutter (19414): ** handleMeshPacket
+I/flutter (19414): *** handlePositionPortNum: latitudeI: 599661395
+I/flutter (19414): longitudeI: 106459123
+I/flutter (19414): altitude: 265
+I/flutter (19414): batteryLevel: 68
+I/flutter (19414): time: 1629373289
+I/flutter (19414): radioConfigRequest with deviceId=08:3A:F2:44:BB:0A
+F/JabraSDK(28652): Initializing logger LIBJABRA_TRACE_LEVEL: FATAL
