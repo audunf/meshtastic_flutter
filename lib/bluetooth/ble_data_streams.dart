@@ -14,7 +14,7 @@ class BleDataStreams {
   BleStatusMonitor _bleStatusMonitor;
   BleDeviceConnector _bleDeviceConnector;
 
-  Stream<List<int>>? _readNotifyWriteStream;
+  Stream<List<int>>? _readNotifyWriteStream; // stream which notifies when there are packets to read (without first having written)
   StreamSubscription<List<int>>? _readNotifyWriteSubscription;
   
   StreamController<List<int>> _rawFromRadioStreamController = StreamController.broadcast(); // bytes from the radio
@@ -37,22 +37,17 @@ class BleDataStreams {
 
   /// called whenever BLE status changes
   _bleStatusHandler(BleStatus status) {
-    print("BleDataStreams::bleStatusHandler status=" + status.toString());
+    //print("BleDataStreams::bleStatusHandler status=" + status.toString());
   }
 
   /// called whenever connection state changes
   _connectionStateUpdateHandler(ConnectionStateUpdate u) async {
-    print("BleDataStreams::_connectionStateUpdate = " + u.toString());
-    if (u.connectionState == DeviceConnectionState.connected) { // on new connection, initialize data streams
-      await _onConnectedHandler(u.deviceId);
-    } else if (u.connectionState == DeviceConnectionState.disconnected) {
-      await _onDisconnectHandler(u.deviceId);
-    }
+    //print("BleDataStreams::_connectionStateUpdate = " + u.toString());
   }
 
   /// This happens whenever we've just connected to a device
-  _onConnectedHandler(String deviceId) async {
-    print("_onConnectedHandler with deviceId = " + deviceId);
+  connectDataStreams(String deviceId) async {
+    print("connectDataStreams with deviceId = " + deviceId);
 
     await _readNotifyWriteSubscription?.cancel();
     _readNotifyWriteStream = _deviceInteractor.subScribeToCharacteristic(getCharacteristic(deviceId, Constants.readNotifyWriteCharacteristicId)).asBroadcastStream();
@@ -62,24 +57,14 @@ class BleDataStreams {
       // TODO: Exception always occurs when: 1) node disconnects, 2) phone reconnects. If phone disconnects first - there's no exception.
       print("_readNotifyWriteSubscription - error " + err.toString());
       await _readNotifyWriteSubscription?.cancel();
-
     }, onDone: () {
       print("_readNotifyWriteSubscription - DONE");
     }, cancelOnError: true);
-
-    // ask for config from node. Might be better places to put this later
-    int configId = DateTime.now().millisecondsSinceEpoch ~/ 1000; // unique number - sent back in config_complete_id (allow to discard old/stale)
-    print("readNodeDB with deviceId=" + deviceId);
-    ToRadio pkt = MakeToRadio.wantConfig(configId);
-    await writeAndReadResponseUntilEmpty(deviceId, pkt);
-
-    print("radioConfigRequest with deviceId=" + deviceId);
-    pkt = MakeToRadio.radioConfigRequest();
-    await writeAndReadResponseUntilEmpty(deviceId, pkt);
   }
 
-  _onDisconnectHandler(String deviceId) async {
-    print("_onDisconnectHandler with deviceId = " + deviceId);
+  /// Teardown - whenever disconnected from a device
+  disconnectDataStreams(String deviceId) async {
+    print("connectDataStreams with deviceId = " + deviceId);
     await _readNotifyWriteSubscription?.cancel();
     _readNotifyWriteSubscription = null;
   }

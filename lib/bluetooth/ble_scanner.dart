@@ -4,6 +4,7 @@ import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
 import 'package:meshtastic_flutter/bluetooth/reactive_state.dart';
 import 'package:meta/meta.dart';
 
+
 @immutable
 class BleScannerState {
   const BleScannerState({
@@ -16,6 +17,7 @@ class BleScannerState {
 }
 
 
+///
 class BleScanner implements ReactiveState<BleScannerState> {
   final FlutterReactiveBle _ble;
   final void Function(String message) _logMessage;
@@ -26,12 +28,16 @@ class BleScanner implements ReactiveState<BleScannerState> {
   @override
   Stream<BleScannerState> get state => _stateStreamController.stream;
 
+
+  /// ctor
   BleScanner({
     required FlutterReactiveBle ble,
     required Function(String message) logMessage,
   })  : _ble = ble,
         _logMessage = logMessage;
 
+
+  ///
   void startScan(List<Uuid> serviceIds, ScanMode scanMode) {
     _logMessage('Start BLE discovery');
 
@@ -50,6 +56,8 @@ class BleScanner implements ReactiveState<BleScannerState> {
     _pushState();
   }
 
+
+  ///
   void _pushState() {
     _stateStreamController.add(
       BleScannerState(
@@ -59,6 +67,8 @@ class BleScanner implements ReactiveState<BleScannerState> {
     );
   }
 
+
+  ///
   Future<void> stopScan() async {
     _logMessage('stopScan - stop BLE discovery');
     await _subscription?.cancel();
@@ -66,6 +76,8 @@ class BleScanner implements ReactiveState<BleScannerState> {
     _pushState();
   }
 
+
+  ///
   Future<void> dispose() async {
     await _stateStreamController.close();
   }

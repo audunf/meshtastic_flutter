@@ -14,6 +14,9 @@ TODO list:
 Put the read/write operations in a separate controlled outside of the BleDataStreams provider.
 - should re-structure BleDataStreams. Where should it
 
+Provider and how to structure the whole data model: 
+https://flutterbyexample.com/lesson/change-notifier-provider
+
 
 Chat:
   Not quite sure how it works with multiple channels active?
@@ -409,3 +412,122 @@ I/flutter (19414): batteryLevel: 68
 I/flutter (19414): time: 1629373289
 I/flutter (19414): radioConfigRequest with deviceId=08:3A:F2:44:BB:0A
 F/JabraSDK(28652): Initializing logger LIBJABRA_TRACE_LEVEL: FATAL
+
+
+
+
+--------------------
+On allowing the connection to time out.
+
+D/BluetoothGatt(25702): onClientConnectionState() - status=19 clientIf=9 device=08:3A:F2:44:BA:FE
+I/flutter (25702): ┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+I/flutter (25702): │ 💡 ConnectionState for device 08:3A:F2:44:BA:FE : DeviceConnectionState.disconnected
+I/flutter (25702): └───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+I/flutter (25702): BleDataStreams::_connectionStateUpdate = ConnectionStateUpdate(deviceId: 08:3A:F2:44:BA:FE, connectionState: DeviceConnectionState.disconnected, failure: GenericFailure<ConnectionError>(code: ConnectionError.failedToConnect, message: "Disconnected from MAC='XX:XX:XX:XX:XX:XX' with status 19 (GATT_CONN_TERMINATE_PEER_USER)"))
+I/flutter (25702): BleConnectionLogic: BleDeviceConnector change ConnectionStateUpdate(deviceId: 08:3A:F2:44:BA:FE, connectionState: DeviceConnectionState.disconnected, failure: GenericFailure<ConnectionError>(code: ConnectionError.failedToConnect, message: "Disconnected from MAC='XX:XX:XX:XX:XX:XX' with status 19 (GATT_CONN_TERMINATE_PEER_USER)"))
+I/flutter (25702): connectDataStreams with deviceId = 08:3A:F2:44:BA:FE
+I/flutter (25702): BleConnectionLogic::_startScan
+I/flutter (25702): BleConnectionLogic::_startScan -> starting scan
+I/flutter (25702): ┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+I/flutter (25702): │ 💡 Start BLE discovery
+I/flutter (25702): └───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+I/flutter (25702): BleConnectionLogic::_btScannerStateHandler - no devices found
+D/BluetoothGatt(25702): setCharacteristicNotification() - uuid: ed9da18c-a800-4f66-a670-aa7547e34453 enable: false
+W/System.err(25702): io.reactivex.exceptions.UndeliverableException: The exception could not be delivered to the consumer because it has already canceled/disposed the flow or the exception has nowhere to go to begin with. Further reading: https://github.com/ReactiveX/RxJava/wiki/What's-different-in-2.0#error-handling | com.polidea.rxandroidble2.exceptions.BleDisconnectedException: Disconnected from MAC='XX:XX:XX:XX:XX:XX' with status 19 (GATT_CONN_TERMINATE_PEER_USER)
+W/System.err(25702): 	at io.reactivex.plugins.RxJavaPlugins.onError(RxJavaPlugins.java:367)
+W/System.err(25702): 	at io.reactivex.internal.operators.observable.ObservableFlatMap$MergeObserver.dispose(ObservableFlatMap.java:313)
+W/System.err(25702): 	at io.reactivex.internal.disposables.DisposableHelper.dispose(DisposableHelper.java:124)
+W/System.err(25702): 	at io.reactivex.internal.operators.observable.ObservableReplay$ReplayObserver.dispose(ObservableReplay.java:271)
+W/System.err(25702): 	at io.reactivex.internal.disposables.DisposableHelper.dispose(DisposableHelper.java:124)
+W/System.err(25702): 	at io.reactivex.internal.operators.observable.ObservableRefCount.timeout(ObservableRefCount.java:156)
+W/System.err(25702): 	at io.reactivex.internal.operators.observable.ObservableRefCount.cancel(ObservableRefCount.java:103)
+W/System.err(25702): 	at io.reactivex.internal.operators.observable.ObservableRefCount$RefCountObserver.dispose(ObservableRefCount.java:252)
+W/System.err(25702): 	at io.reactivex.internal.disposables.DisposableHelper.dispose(DisposableHelper.java:124)
+W/System.err(25702): 	at io.reactivex.internal.operators.mixed.CompletableAndThenObservable$AndThenObservableObserver.dispose(CompletableAndThenObservable.java:86)
+W/System.err(25702): 	at io.reactivex.internal.disposables.DisposableHelper.dispose(DisposableHelper.java:124)
+W/System.err(25702): 	at io.reactivex.internal.operators.mixed.SingleFlatMapObservable$FlatMapObserver.dispose(SingleFlatMapObservable.java:84)
+W/System.err(25702): 	at io.reactivex.internal.disposables.DisposableHelper.dispose(DisposableHelper.java:124)
+W/System.err(25702): 	at io.reactivex.internal.operators.mixed.SingleFlatMapObservable$FlatMapObserver.dispose(SingleFlatMapObservable.java:84)
+W/System.err(25702): 	at io.reactivex.internal.disposables.DisposableHelper.dispose(DisposableHelper.java:124)
+W/System.err(25702): 	at io.reactivex.internal.operators.observable.ObservableFlatMap$InnerObserver.dispose(ObservableFlatMap.java:588)
+D/BluetoothGatt(25702): close()
+W/System.err(25702): 	at io.reactivex.internal.operators.observable.ObservableFlatMap$MergeObserver.disposeAll(ObservableFlatMap.java:510)
+D/BluetoothGatt(25702): unregisterApp() - mClientIf=9
+W/System.err(25702): 	at io.reactivex.internal.operators.observable.ObservableFlatMap$MergeObserver.dispose(ObservableFlatMap.java:310)
+W/System.err(25702): 	at io.reactivex.internal.operators.observable.ObservableFlatMap$MergeObserver.disposeAll(ObservableFlatMap.java:504)
+W/System.err(25702): 	at io.reactivex.internal.operators.observable.ObservableFlatMap$MergeObserver.dispose(ObservableFlatMap.java:310)
+W/System.err(25702): 	at io.reactivex.internal.operators.observable.ObservableObserveOn$ObserveOnObserver.dispose(ObservableObserveOn.java:146)
+W/System.err(25702): 	at io.reactivex.internal.disposables.DisposableHelper.dispose(DisposableHelper.java:124)
+W/System.err(25702): 	at io.reactivex.internal.observers.LambdaObserver.dispose(LambdaObserver.java:102)
+W/System.err(25702): 	at com.signify.hue.flutterreactiveble.channelhandlers.CharNotificationHandler.unsubscribeFromAllNotifications(CharNotificationHandler.kt:59)
+W/System.err(25702): 	at com.signify.hue.flutterreactiveble.channelhandlers.CharNotificationHandler.onCancel(CharNotificationHandler.kt:28)
+W/System.err(25702): 	at io.flutter.plugin.common.EventChannel$IncomingStreamRequestHandler.onCancel(EventChannel.java:201)
+W/System.err(25702): 	at io.flutter.plugin.common.EventChannel$IncomingStreamRequestHandler.onMessage(EventChannel.java:169)
+W/System.err(25702): 	at io.flutter.embedding.engine.dart.DartMessenger.handleMessageFromDart(DartMessenger.java:85)
+W/System.err(25702): 	at io.flutter.embedding.engine.FlutterJNI.handlePlatformMessage(FlutterJNI.java:818)
+W/System.err(25702): 	at android.os.MessageQueue.nativePollOnce(Native Method)
+W/System.err(25702): 	at android.os.MessageQueue.next(MessageQueue.java:335)
+W/System.err(25702): 	at android.os.Looper.loop(Looper.java:183)
+W/System.err(25702): 	at android.app.ActivityThread.main(ActivityThread.java:8010)
+W/System.err(25702): 	at java.lang.reflect.Method.invoke(Native Method)
+W/System.err(25702): 	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:631)
+W/System.err(25702): 	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:978)
+W/System.err(25702): Caused by: com.polidea.rxandroidble2.exceptions.BleDisconnectedException: Disconnected from MAC='XX:XX:XX:XX:XX:XX' with status 19 (GATT_CONN_TERMINATE_PEER_USER)
+W/System.err(25702): 	at com.polidea.rxandroidble2.internal.connection.RxBleGattCallback$2.onConnectionStateChange(RxBleGattCallback.java:81)
+W/System.err(25702): 	at android.bluetooth.BluetoothGatt$1$4.run(BluetoothGatt.java:272)
+W/System.err(25702): 	at android.bluetooth.BluetoothGatt.runOrQueueCallback(BluetoothGatt.java:780)
+W/System.err(25702): 	at android.bluetooth.BluetoothGatt.access$200(BluetoothGatt.java:41)
+W/System.err(25702): 	at android.bluetooth.BluetoothGatt$1.onClientConnectionState(BluetoothGatt.java:267)
+W/System.err(25702): 	at android.bluetooth.IBluetoothGattCallback$Stub.onTransact(IBluetoothGattCallback.java:192)
+W/System.err(25702): 	at android.os.Binder.execTransactInternal(Binder.java:1170)
+W/System.err(25702): 	at android.os.Binder.execTransact(Binder.java:1134)
+E/AndroidRuntime(25702): FATAL EXCEPTION: main
+E/AndroidRuntime(25702): Process: com.meshtastic.meshtastic_flutter, PID: 25702
+E/AndroidRuntime(25702): io.reactivex.exceptions.UndeliverableException: The exception could not be delivered to the consumer because it has already canceled/disposed the flow or the exception has nowhere to go to begin with. Further reading: https://github.com/ReactiveX/RxJava/wiki/What's-different-in-2.0#error-handling | com.polidea.rxandroidble2.exceptions.BleDisconnectedException: Disconnected from MAC='XX:XX:XX:XX:XX:XX' with status 19 (GATT_CONN_TERMINATE_PEER_USER)
+E/AndroidRuntime(25702): 	at io.reactivex.plugins.RxJavaPlugins.onError(RxJavaPlugins.java:367)
+E/AndroidRuntime(25702): 	at io.reactivex.internal.operators.observable.ObservableFlatMap$MergeObserver.dispose(ObservableFlatMap.java:313)
+E/AndroidRuntime(25702): 	at io.reactivex.internal.disposables.DisposableHelper.dispose(DisposableHelper.java:124)
+E/AndroidRuntime(25702): 	at io.reactivex.internal.operators.observable.ObservableReplay$ReplayObserver.dispose(ObservableReplay.java:271)
+E/AndroidRuntime(25702): 	at io.reactivex.internal.disposables.DisposableHelper.dispose(DisposableHelper.java:124)
+E/AndroidRuntime(25702): 	at io.reactivex.internal.operators.observable.ObservableRefCount.timeout(ObservableRefCount.java:156)
+E/AndroidRuntime(25702): 	at io.reactivex.internal.operators.observable.ObservableRefCount.cancel(ObservableRefCount.java:103)
+E/AndroidRuntime(25702): 	at io.reactivex.internal.operators.observable.ObservableRefCount$RefCountObserver.dispose(ObservableRefCount.java:252)
+E/AndroidRuntime(25702): 	at io.reactivex.internal.disposables.DisposableHelper.dispose(DisposableHelper.java:124)
+E/AndroidRuntime(25702): 	at io.reactivex.internal.operators.mixed.CompletableAndThenObservable$AndThenObservableObserver.dispose(CompletableAndThenObservable.java:86)
+E/AndroidRuntime(25702): 	at io.reactivex.internal.disposables.DisposableHelper.dispose(DisposableHelper.java:124)
+E/AndroidRuntime(25702): 	at io.reactivex.internal.operators.mixed.SingleFlatMapObservable$FlatMapObserver.dispose(SingleFlatMapObservable.java:84)
+E/AndroidRuntime(25702): 	at io.reactivex.internal.disposables.DisposableHelper.dispose(DisposableHelper.java:124)
+E/AndroidRuntime(25702): 	at io.reactivex.internal.operators.mixed.SingleFlatMapObservable$FlatMapObserver.dispose(SingleFlatMapObservable.java:84)
+E/AndroidRuntime(25702): 	at io.reactivex.internal.disposables.DisposableHelper.dispose(DisposableHelper.java:124)
+E/AndroidRuntime(25702): 	at io.reactivex.internal.operators.observable.ObservableFlatMap$InnerObserver.dispose(ObservableFlatMap.java:588)
+E/AndroidRuntime(25702): 	at io.reactivex.internal.operators.observable.ObservableFlatMap$MergeObserver.disposeAll(ObservableFlatMap.java:510)
+E/AndroidRuntime(25702): 	at io.reactivex.internal.operators.observable.ObservableFlatMap$MergeObserver.dispose(ObservableFlatMap.java:310)
+E/AndroidRuntime(25702): 	at io.reactivex.internal.operators.observable.ObservableFlatMap$MergeObserver.disposeAll(ObservableFlatMap.java:504)
+E/AndroidRuntime(25702): 	at io.reactivex.internal.operators.observable.ObservableFlatMap$MergeObserver.dispose(ObservableFlatMap.java:310)
+E/AndroidRuntime(25702): 	at io.reactivex.internal.operators.observable.ObservableObserveOn$ObserveOnObserver.dispose(ObservableObserveOn.java:146)
+E/AndroidRuntime(25702): 	at io.reactivex.internal.disposables.DisposableHelper.dispose(DisposableHelper.java:124)
+E/AndroidRuntime(25702): 	at io.reactivex.internal.observers.LambdaObserver.dispose(LambdaObserver.java:102)
+E/AndroidRuntime(25702): 	at com.signify.hue.flutterreactiveble.channelhandlers.CharNotificationHandler.unsubscribeFromAllNotifications(CharNotificationHandler.kt:59)
+E/AndroidRuntime(25702): 	at com.signify.hue.flutterreactiveble.channelhandlers.CharNotificationHandler.onCancel(CharNotificationHandler.kt:28)
+E/AndroidRuntime(25702): 	at io.flutter.plugin.common.EventChannel$IncomingStreamRequestHandler.onCancel(EventChannel.java:201)
+E/AndroidRuntime(25702): 	at io.flutter.plugin.common.EventChannel$IncomingStreamRequestHandler.onMessage(EventChannel.java:169)
+E/AndroidRuntime(25702): 	at io.flutter.embedding.engine.dart.DartMessenger.handleMessageFromDart(DartMessenger.java:85)
+E/AndroidRuntime(25702): 	at io.flutter.embedding.engine.FlutterJNI.handlePlatformMessage(FlutterJNI.java:818)
+E/AndroidRuntime(25702): 	at android.os.MessageQueue.nativePollOnce(Native Method)
+E/AndroidRuntime(25702): 	at android.os.MessageQueue.next(MessageQueue.java:335)
+E/AndroidRuntime(25702): 	at android.os.Looper.loop(Looper.java:183)
+E/AndroidRuntime(25702): 	at android.app.ActivityThread.main(ActivityThread.java:8010)
+E/AndroidRuntime(25702): 	at java.lang.reflect.Method.invoke(Native Method)
+E/AndroidRuntime(25702): 	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:631)
+E/AndroidRuntime(25702): 	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:978)
+E/AndroidRuntime(25702): Caused by: com.polidea.rxandroidble2.exceptions.BleDisconnectedException: Disconnected from MAC='XX:XX:XX:XX:XX:XX' with status 19 (GATT_CONN_TERMINATE_PEER_USER)
+E/AndroidRuntime(25702): 	at com.polidea.rxandroidble2.internal.connection.RxBleGattCallback$2.onConnectionStateChange(RxBleGattCallback.java:81)
+E/AndroidRuntime(25702): 	at android.bluetooth.BluetoothGatt$1$4.run(BluetoothGatt.java:272)
+E/AndroidRuntime(25702): 	at android.bluetooth.BluetoothGatt.runOrQueueCallback(BluetoothGatt.java:780)
+E/AndroidRuntime(25702): 	at android.bluetooth.BluetoothGatt.access$200(BluetoothGatt.java:41)
+E/AndroidRuntime(25702): 	at android.bluetooth.BluetoothGatt$1.onClientConnectionState(BluetoothGatt.java:267)
+E/AndroidRuntime(25702): 	at android.bluetooth.IBluetoothGattCallback$Stub.onTransact(IBluetoothGattCallback.java:192)
+E/AndroidRuntime(25702): 	at android.os.Binder.execTransactInternal(Binder.java:1170)
+E/AndroidRuntime(25702): 	at android.os.Binder.execTransact(Binder.java:1134)
+I/Process (25702): Sending signal. PID: 25702 SIG: 9
+Lost connection to device.

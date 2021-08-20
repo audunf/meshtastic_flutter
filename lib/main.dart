@@ -6,6 +6,7 @@ import 'package:logger/logger.dart';
 import 'package:meshtastic_flutter/model/mesh_data_model.dart';
 import 'package:meshtastic_flutter/proto-autogen/mesh.pb.dart';
 import 'package:meshtastic_flutter/protocol/app_from_radio_handler.dart';
+import 'package:meshtastic_flutter/protocol/to_radio.dart';
 import 'package:meshtastic_flutter/widget/bluetooth_connection_icon.dart';
 import 'package:meshtastic_flutter/model/tab_definition.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -13,6 +14,7 @@ import 'package:provider/provider.dart';
 import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
 import 'package:tuple/tuple.dart';
 
+import 'bluetooth/ble_connection_logic.dart';
 import 'bluetooth/ble_data_streams.dart';
 import 'bluetooth/ble_device_connector.dart';
 import 'bluetooth/ble_device_interactor.dart';
@@ -65,7 +67,6 @@ List<TabDefinition> allTabDefinitions = <TabDefinition>[
   ])
 ];
 
-
 ///
 /// MAIN
 ///
@@ -91,7 +92,7 @@ void main() async {
         ),
   );
   final _settings = SettingsModel();
-  await _settings.initializeSettingsFromStorage();  // read initial settings from storage
+  await _settings.initializeSettingsFromStorage(); // read initial settings from storage
 
   final _meshDataModel = MeshDataModel();
   final _ble = FlutterReactiveBle();
@@ -101,7 +102,7 @@ void main() async {
     ble: _ble,
     logMessage: _logger.i,
   );
-  final _serviceDiscoverer = BleDeviceInteractor(
+  final _interactor = BleDeviceInteractor(
     bleDiscoverServices: _ble.discoverServices,
     readCharacteristic: _ble.readCharacteristic,
     writeWithResponse: _ble.writeCharacteristicWithResponse,
@@ -111,9 +112,12 @@ void main() async {
   );
 
   final _bleDataStreams =
-      BleDataStreams(deviceInteractor: _serviceDiscoverer, bleDeviceConnector: _connector, bleStatusMonitor: _monitor); // raw and FromRadio data streams
+      BleDataStreams(deviceInteractor: _interactor, bleDeviceConnector: _connector, bleStatusMonitor: _monitor); // raw and FromRadio data streams
   final _fromRadioHandler = AppFromRadioHandler(
       bleDataStreams: _bleDataStreams, settingsModel: _settings, meshDataModel: _meshDataModel); // populates data models based on FromRadio packets
+
+  final _bleConnectionLogic = BleConnectionLogic(
+      settingsModel: _settings, scanner: _scanner, monitor: _monitor, connector: _connector, interactor: _interactor, bleDataStreams: _bleDataStreams);
 
   runApp(MultiProvider(
     providers: [
@@ -121,7 +125,7 @@ void main() async {
       ChangeNotifierProvider.value(value: _meshDataModel),
       Provider.value(value: _monitor),
       Provider.value(value: _connector),
-      Provider.value(value: _serviceDiscoverer),
+      Provider.value(value: _interactor),
       Provider.value(value: _logger),
       Provider.value(value: _scanner),
       Provider.value(value: _bleDataStreams),
@@ -148,6 +152,7 @@ void main() async {
     ],
     child: MeshtasticApp(),
   ));
+
 }
 
 /// The app
@@ -218,7 +223,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin<HomeP
     setState(() {
       _appLifecycleState = state;
     });
-    switch(state) {
+    switch (state) {
       case AppLifecycleState.paused:
         break;
       case AppLifecycleState.detached:
@@ -347,7 +352,6 @@ class TabDefinitionView extends StatefulWidget {
 
 ///
 class _DestinationViewState extends State<TabDefinitionView> {
-
   @override
   void initState() {
     super.initState();

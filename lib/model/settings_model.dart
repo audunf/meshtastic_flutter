@@ -1,9 +1,13 @@
 
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tuple/tuple.dart';
 
 import 'package:meshtastic_flutter/constants.dart' as Constants;
+import 'package:meshtastic_flutter/mesh_utilities.dart' as MeshUtils;
 
 /// Settings related to the app itself and to the connected node.
 /// Settings are persisted. User *MUST* call 'initializeSettingsFromStorage' before using!
@@ -16,8 +20,12 @@ class SettingsModel extends ChangeNotifier {
   int _myNodeNum = 0;
   int _regionCode = 0;
 
+  // notify of individual changes - attribute name, old value, new value
+  var changeStreamController = StreamController<Tuple3<String, dynamic, dynamic>>.broadcast();
+  Stream<Tuple3<String, dynamic, dynamic>> get changeStream => changeStreamController.stream;
+
   /// Must be called with await before continuing
-  initializeSettingsFromStorage() async {
+  Future<void> initializeSettingsFromStorage() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     _bluetoothEnabled = (prefs.getBool('bluetoothEnabled') ?? _bluetoothEnabled);
     _bluetoothDeviceId = (prefs.getString('bluetoothDeviceId') ?? _bluetoothDeviceId);
@@ -26,6 +34,23 @@ class SettingsModel extends ChangeNotifier {
     _userShortName =  (prefs.getString('userShortName') ?? _userShortName);
     _myNodeNum = (prefs.getInt('myNodeNum') ?? _myNodeNum);
     _regionCode = (prefs.getInt('regionCode') ?? _regionCode);
+  }
+
+  /// handle two competing/complementary ways to distribute state changes, and persist settings
+  publishChange(String fieldName, dynamic oldValue, dynamic newValue) {
+    notifyListeners(); // notify via 'ChangeNotifier'
+    changeStreamController.sink.add(Tuple3(fieldName, oldValue, newValue)); // notify via home grown mechanism
+
+    // persist
+    if (newValue is String) {
+      SharedPreferences.getInstance().then((prefs) => prefs.setString(fieldName, newValue));
+    } else if (newValue is bool) {
+      SharedPreferences.getInstance().then((prefs) => prefs.setBool(fieldName, newValue));
+    } else if (newValue is int) {
+      SharedPreferences.getInstance().then((prefs) => prefs.setInt(fieldName, newValue));
+    } else if (newValue is double) {
+      SharedPreferences.getInstance().then((prefs) => prefs.setDouble(fieldName, newValue));
+    }
   }
 
   bool get bluetoothEnabled {
@@ -60,48 +85,56 @@ class SettingsModel extends ChangeNotifier {
     return Constants.regionCodes[this.regionCode] ?? 'Unknown';
   }
 
-  setBluetoothEnabled(bool b) {
-    _bluetoothEnabled = b;
-    SharedPreferences.getInstance().then((prefs) => prefs.setBool('bluetoothEnabled', b));
-    notifyListeners();
+  setBluetoothEnabled(bool newValue) {
+    var oldValue = _bluetoothEnabled;
+    _bluetoothEnabled = newValue;
+    publishChange('bluetoothEnabled', oldValue, _bluetoothEnabled);
   }
 
   setBluetoothDeviceId(String s) {
+    var oldValue = _bluetoothDeviceId;
     _bluetoothDeviceId = s;
-    SharedPreferences.getInstance().then((prefs) => prefs.setString('bluetoothDeviceId', s));
-    notifyListeners();
+    publishChange('bluetoothDeviceId', oldValue, _bluetoothDeviceId);
   }
 
   setBluetoothDeviceName(String s) {
+    var oldValue = _bluetoothDeviceName;
     _bluetoothDeviceName = s;
-    SharedPreferences.getInstance().then((prefs) => prefs.setString('bluetoothDeviceName', s));
-    notifyListeners();
+    publishChange('bluetoothDeviceName', oldValue, _bluetoothDeviceName);
   }
 
   setUserLongName(String s) async {
+    var oldValue = _userLongName;
     _userLongName = s;
-    SharedPreferences.getInstance().then((prefs) => prefs.setString('userLongName', s));
-    notifyListeners();
+    publishChange('userLongName', oldValue, _userLongName);
   }
 
   setUserShortName(String s) async {
+    var oldValue = _userShortName;
     _userShortName = s;
-    SharedPreferences.getInstance().then((prefs) => prefs.setString('userShortName', s));
-    notifyListeners();
+    publishChange('userShortName', oldValue, _userShortName);
   }
 
   setRegionCode(int c) async {
     if (c >= Constants.regionCodes.keys.first && c <= Constants.regionCodes.keys.last) {
+      var oldValue = _regionCode;
       _regionCode = c;
-      SharedPreferences.getInstance().then((prefs) => prefs.setInt('regionCode', c));
-      notifyListeners();
+      publishChange('regionCode', oldValue, _regionCode);
     }
   }
 
   setMyNodeNum(int num) async {
+    var oldValue = _myNodeNum;
     _myNodeNum = num;
-    SharedPreferences.getInstance().then((prefs) => prefs.setInt('myNodeNum', num));
-    notifyListeners();
+    publishChange('myNodeNum', oldValue, _myNodeNum);
   }
 
+  void dispose() async {
+    changeStreamController.close();
+    super.dispose();
+  }
+
+  bool isBluetoothDeviceIdValidMac() {
+    return MeshUtils.isValidBluetoothMac(bluetoothDeviceId);
+  }
 }

@@ -33,14 +33,10 @@ class SettingsScreen extends StatelessWidget {
                     title: 'Enable bluetooth',
                     leading: Icon(Icons.bluetooth),
                     switchValue: settingsModel.bluetoothEnabled,
-                    onToggle: (bool value) async {
-                      settingsModel.setBluetoothEnabled(value);
-                      if (value == true && settingsModel.bluetoothDeviceId == "Unknown") {
+                    onToggle: (bool newValue) async {
+                      settingsModel.setBluetoothEnabled(newValue);
+                      if (newValue == true && settingsModel.bluetoothDeviceId == "Unknown") { // show available devices
                         Navigator.pushNamed(context, "/selectBluetoothDevice");
-                      } else if (value == true && settingsModel.bluetoothDeviceId != "Unknown") {
-                        bleConnector.connect(settingsModel.bluetoothDeviceId);
-                      } else if (value == false && settingsModel.bluetoothDeviceId != "Unknown") {
-                        bleConnector.disconnect(settingsModel.bluetoothDeviceId);
                       }
                     },
                   ),
@@ -103,7 +99,7 @@ class SelectBluetoothDeviceScreen extends StatelessWidget {
 class _DeviceList extends StatefulWidget {
   final BleScannerState scannerState;
   final void Function(List<Uuid>, ScanMode) startScan;
-  final VoidCallback stopScan;
+  final Future<void> Function() stopScan;
 
   const _DeviceList({required this.scannerState, required this.startScan, required this.stopScan});
 
@@ -141,10 +137,9 @@ class _DeviceListState extends State<_DeviceList> {
                       title: device.name + ", " + device.id,
                       trailing: trailingWidget(device.id, settingsModel.bluetoothDeviceId),
                       onPressed: (BuildContext context) async {
-                        widget.stopScan();
-                        settingsModel.setBluetoothDeviceId(device.id);
+                        await widget.stopScan();
                         settingsModel.setBluetoothDeviceName(device.name);
-                        bleDeviceConnector.connect(device.id);
+                        settingsModel.setBluetoothDeviceId(device.id);
                         Navigator.of(context).pop();
                       },
                     ),
