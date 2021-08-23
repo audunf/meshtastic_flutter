@@ -41,8 +41,13 @@ class BleConnectionLogic {
   /// scan for the device from settingsModel.bluetoothDeviceId
   _startScan() {
     print("BleConnectionLogic::_startScan");
+
+    if (_currentBleStatus != BleStatus.ready) {
+      print("BleConnectionLogic::_startScan - _currentBleStatus: ${_currentBleStatus} - can't scan");
+      return;
+    }
     if (settingsModel.bluetoothEnabled == false) {
-      print("BleConnectionLogic::_startScan - BT disabled");
+      print("BleConnectionLogic::_startScan - bluetoothEnabled setting = false");
       return;
     }
     if (!MeshUtils.isValidBluetoothMac(settingsModel.bluetoothDeviceId)) {
@@ -53,6 +58,7 @@ class BleConnectionLogic {
       print("BleConnectionLogic::_startScan -> scan already in progress -> do nothing");
       return;
     }
+
     print("BleConnectionLogic::_startScan -> starting scan");
     _bleScanIsInProgress = true;
     scanner.startScan(<Uuid>[Constants.meshtasticServiceId], ScanMode.balanced);
@@ -90,11 +96,17 @@ class BleConnectionLogic {
 
   /// handle enable/disable BT in settings
   _settingsBluetoothEnabled(oldValue, newValue) {
-    if (!settingsModel.isBluetoothDeviceIdValidMac()) return;
+    if (!settingsModel.isBluetoothDeviceIdValidMac()) {
+      return;
+    }
+
     if (newValue == true) {
       _startScan();
     } else if (newValue == false) {
-      connector.disconnect(settingsModel.bluetoothDeviceId);
+      _stopScan();
+      if (_currentConnectionState == DeviceConnectionState.connected || _currentConnectionState == DeviceConnectionState.connecting) {
+        connector.disconnect(settingsModel.bluetoothDeviceId);
+      }
     }
   }
 
@@ -137,6 +149,7 @@ class BleConnectionLogic {
 
   /// called whenever BLE status changes
   _btStatusMonitorHandler(BleStatus s) {
+    _currentBleStatus = s;
     print("BleConnectionLogic: BleStatusMonitor change " + s.toString());
     switch (s) {
       case BleStatus.unknown:
@@ -157,15 +170,19 @@ class BleConnectionLogic {
 
   /// called whenever connection state changes
   _btConnectionUpdateHandler(ConnectionStateUpdate s) async {
-    print("BleConnectionLogic: BleDeviceConnector change ${s}");
     _currentConnectionState = s.connectionState;
+
+    print("BleConnectionLogic: BleDeviceConnector change ${s}");
 
     if (s.connectionState == DeviceConnectionState.connected) {
       await bleDataStreams.connectDataStreams(s.deviceId); // on new connection, initialize data streams
       await _sendWantConfig(s.deviceId);
     } else if (s.connectionState == DeviceConnectionState.disconnected) {
       await bleDataStreams.disconnectDataStreams(s.deviceId);
-      _startScan(); // on disconnect, start scanning again...
+
+      Future.delayed(const Duration(milliseconds: 1000), () { // Take a break before starting scan again. Very unscientific.
+        _startScan(); // on disconnect, start scanning again...
+      });
     }
   }
 

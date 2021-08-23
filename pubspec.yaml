@@ -39,6 +39,9 @@ dependencies:
   tuple: ^2.0.0
   flutter_map: ^0.13.1
   latlong2: ^0.8.0
+  cached_network_image: ^3.1.0
+  speech_bubble: ^0.0.9
+  geolocator: ^7.4.0
 
 dev_dependencies:
   flutter_test:

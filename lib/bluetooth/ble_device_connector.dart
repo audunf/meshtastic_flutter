@@ -31,7 +31,7 @@ class BleDeviceConnector extends ReactiveState<ConnectionStateUpdate> {
 
     // if there is an active connection -> disconnect before attempting to connect
     if (_connection != null && _currentConnectedDeviceId.length > 0) {
-      disconnect(_currentConnectedDeviceId);
+      await disconnect(_currentConnectedDeviceId);
     }
 
     _connection = _ble
@@ -39,8 +39,8 @@ class BleDeviceConnector extends ReactiveState<ConnectionStateUpdate> {
             id: deviceId,
             withServices: <Uuid>[Constants.meshtasticServiceId],
             servicesWithCharacteristicsToDiscover: servicesWithCharacteristics,
-            prescanDuration: const Duration(seconds: 5),
-            connectionTimeout: const Duration(seconds: 5))
+            prescanDuration: const Duration(seconds: 1),
+            connectionTimeout: const Duration(seconds: 1))
         .listen(
       (conState) async {
         _logMessage('ConnectionState for device $deviceId : ${conState.connectionState}');
@@ -58,7 +58,7 @@ class BleDeviceConnector extends ReactiveState<ConnectionStateUpdate> {
   Future<void> disconnect(String deviceId) async {
     try {
       _logMessage('disconnecting from device: $deviceId');
-      _currentConnectedDeviceId = "";  // clear ID of current connected device
+      _currentConnectedDeviceId = ""; // clear ID of current connected device
       await _connection?.cancel();
       _connection = null;
     } on Exception catch (e, _) {
