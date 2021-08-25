@@ -13,14 +13,6 @@ class BluetoothConnectionIcon extends StatelessWidget {
       ));
 
   Widget getIcon(BleStatus status, BleScannerState scannerState, ConnectionStateUpdate connectionState) {
-    print("BluetoothConnectionIcon bleStatus=" +
-        status.toString() +
-        ", connectionState=" +
-        connectionState.toString() +
-        ", scannerState.scanInProgress=" +
-        scannerState.scanIsInProgress.toString() +
-        ", discoveredDevices=" +
-        scannerState.discoveredDevices.toString());
     IconData icon = Icons.bluetooth_disabled;
     if (status != BleStatus.ready) {
       icon = Icons.bluetooth_disabled;

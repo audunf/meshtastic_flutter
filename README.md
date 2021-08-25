@@ -16,8 +16,7 @@ There needs to be:
 
 
 TODO list:
-- Chat screen. Conversation view. (use this? https://pub.dev/packages/bubble )
-  List-view
+- Chat screen. 
   How to send a message?
   Send message 
   Receive message 

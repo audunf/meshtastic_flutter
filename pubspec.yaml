@@ -43,6 +43,7 @@ dependencies:
   speech_bubble: ^0.0.9
   geolocator: ^7.4.0
   bubble: ^1.2.1
+  sqflite: ^2.0.0+4
 
 dev_dependencies:
   flutter_test:
