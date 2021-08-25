@@ -3,6 +3,7 @@ import 'package:meshtastic_flutter/bluetooth/ble_device_connector.dart';
 import 'package:meshtastic_flutter/constants.dart' as Constants;
 import 'package:meshtastic_flutter/model/settings_model.dart';
 import 'package:meshtastic_flutter/model/tab_definition.dart';
+import 'package:meshtastic_flutter/widget/bluetooth_connection_icon.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
 import 'package:settings_ui/settings_ui.dart';
@@ -19,6 +20,7 @@ class SettingsScreen extends StatelessWidget {
           appBar: AppBar(
             title: Text(tabDefinition.title),
             backgroundColor: tabDefinition.appbarColor,
+            actions: [BluetoothConnectionIcon()],
           ),
           backgroundColor: tabDefinition.backgroundColor,
           body: SettingsList(

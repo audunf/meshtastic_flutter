@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:meshtastic_flutter/model/tab_definition.dart';
+import 'package:meshtastic_flutter/widget/bluetooth_connection_icon.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
 import 'package:bubble/bubble.dart';
@@ -42,6 +43,7 @@ class ChatScreen extends StatelessWidget {
         appBar: AppBar(
           title: Text(tabDefinition.title),
           backgroundColor: tabDefinition.appbarColor,
+          actions: [BluetoothConnectionIcon()],
         ),
         backgroundColor: tabDefinition.backgroundColor,
         body: Column(children: [
@@ -105,7 +107,7 @@ class ChatScreen extends StatelessWidget {
                     onFieldSubmitted: (String value) {},
                   ))),
                   Padding(
-                      padding: EdgeInsets.all(5),
+                      padding: EdgeInsets.fromLTRB(5, 0,0,0), // add some space to the text input box
                       child: ClipRRect(
                           borderRadius: BorderRadius.circular(4),
                           child: Stack(children: <Widget>[

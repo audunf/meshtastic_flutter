@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:meshtastic_flutter/model/mesh_data_model.dart';
 import 'package:meshtastic_flutter/model/tab_definition.dart';
+import 'package:meshtastic_flutter/widget/bluetooth_connection_icon.dart';
 import 'package:provider/provider.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:speech_bubble/speech_bubble.dart';
@@ -123,6 +124,7 @@ class _MapScreenState extends State<MapScreen> {
           appBar: AppBar(
             title: Text(tabDefinition.title),
             backgroundColor: tabDefinition.appbarColor,
+            actions: [BluetoothConnectionIcon()],
           ),
           backgroundColor: tabDefinition.backgroundColor,
           body: Center(

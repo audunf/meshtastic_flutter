@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:meshtastic_flutter/model/mesh_data_model.dart';
 import 'package:meshtastic_flutter/model/tab_definition.dart';
+import 'package:meshtastic_flutter/widget/bluetooth_connection_icon.dart';
 import 'package:provider/provider.dart';
 import 'package:meshtastic_flutter/mesh_utilities.dart' as MeshUtils;
 
@@ -16,6 +17,7 @@ class PeopleScreen extends StatelessWidget {
           appBar: AppBar(
             title: Text(tabDefinition.title),
             backgroundColor: tabDefinition.appbarColor,
+            actions: [BluetoothConnectionIcon()],
           ),
           backgroundColor: tabDefinition.backgroundColor,
           body: Center(
