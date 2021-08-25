@@ -15,9 +15,9 @@ class PeopleScreen extends StatelessWidget {
       builder: (ctx, meshDataModel, __) => Scaffold(
           appBar: AppBar(
             title: Text(tabDefinition.title),
-            backgroundColor: tabDefinition.color,
+            backgroundColor: tabDefinition.appbarColor,
           ),
-          //backgroundColor: tabDefinition.color[50],
+          backgroundColor: tabDefinition.backgroundColor,
           body: Center(
               child: ListView(
                   padding: const EdgeInsets.all(8),

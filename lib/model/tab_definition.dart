@@ -11,11 +11,12 @@ class TabDefinition {
   final int index;
   final String title;
   final IconData icon;
-  final MaterialColor color;
+  final Color appbarColor;
+  final Color backgroundColor;
   final HashMap<String, Function> screens = new HashMap<String, Function>();
   final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
-  TabDefinition(this.index, this.title, this.icon, this.color, List<Tuple2<String, Function>> screenList) {
+  TabDefinition(this.index, this.title, this.icon, this.appbarColor, this.backgroundColor, List<Tuple2<String, Function>> screenList) {
     for (var e in screenList) {
       screens.putIfAbsent(e.item1, () => e.item2);
     }

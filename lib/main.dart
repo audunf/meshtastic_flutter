@@ -31,27 +31,27 @@ import 'screen/settings_screen.dart';
 /// Definition of tabs, their main screen, and sub-screens within each tab (and the navigator path of each)
 /// Note that the main tab screen should be the first one, and should have the route '/'
 List<TabDefinition> allTabDefinitions = <TabDefinition>[
-  TabDefinition(0, 'Chat', Icons.chat, Colors.teal, [
+  TabDefinition(0, 'Chat', Icons.chat, Colors.teal, Colors.grey, [
     Tuple2('/', (tabDef) {
       return ChatScreen(tabDefinition: tabDef);
     }),
   ]),
-  TabDefinition(1, 'People', Icons.people, Colors.cyan, [
+  TabDefinition(1, 'People', Icons.people, Colors.cyan, Colors.grey, [
     Tuple2('/', (tabDef) {
       return PeopleScreen(tabDefinition: tabDef);
     })
   ]),
-  TabDefinition(2, 'Map', Icons.map, Colors.deepPurple, [
+  TabDefinition(2, 'Map', Icons.map, Colors.deepPurple, Colors.grey, [
     Tuple2('/', (tabDef) {
       return MapScreen(tabDefinition: tabDef);
     })
   ]),
-  TabDefinition(3, 'Channel', Icons.contactless_outlined, Colors.orange, [
+  TabDefinition(3, 'Channel', Icons.contactless_outlined, Colors.orange, Colors.grey, [
     Tuple2('/', (tabDef) {
       return ChannelScreen(tabDefinition: tabDef);
     })
   ]),
-  TabDefinition(4, 'Settings', Icons.settings, Colors.blue, [
+  TabDefinition(4, 'Settings', Icons.settings, Colors.blue, Colors.black87, [
     Tuple2('/', (tabDef) {
       return SettingsScreen(tabDefinition: tabDef);
     }),
@@ -314,7 +314,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin<HomeP
                 });
               },
               items: allTabDefinitions.map((TabDefinition destination) {
-                return BottomNavigationBarItem(icon: Icon(destination.icon), backgroundColor: destination.color, label: destination.title);
+                return BottomNavigationBarItem(icon: Icon(destination.icon), backgroundColor: destination.appbarColor, label: destination.title);
               }).toList(),
             ),
           ),

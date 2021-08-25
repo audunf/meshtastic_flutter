@@ -45,7 +45,7 @@ class _MapScreenState extends State<MapScreen> {
   @override
   void initState() {
     _getHandsetPosition().then((LatLng pos) {
-      print("handset position ${pos}");
+      print("handset position $pos");
       _handsetPosition = pos;
     });
     super.initState();
@@ -122,9 +122,9 @@ class _MapScreenState extends State<MapScreen> {
       builder: (ctx, meshDataModel, __) => Scaffold(
           appBar: AppBar(
             title: Text(tabDefinition.title),
-            backgroundColor: tabDefinition.color,
+            backgroundColor: tabDefinition.appbarColor,
           ),
-          //backgroundColor: tabDefinition.color[50],
+          backgroundColor: tabDefinition.backgroundColor,
           body: Center(
               child: FlutterMap(
                   options: MapOptions(

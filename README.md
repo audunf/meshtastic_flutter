@@ -6,6 +6,14 @@ MAP popup
 https://medium.com/zipper-studios/flutter-map-custom-and-dynamic-popup-over-the-marker-732d26ef9bc7
 
 # TODO 
+There needs to be: 
+1. A ToRadio command queue. Any actions get added to this queue. It's sent whenever the phone connects. 
+2. A FromRadio queue. This is the history of all that happened with a particular device. 
+- Both of these need an SQLite DB, with NodeId as key. On connecting to a certain node, use that as key for the tables, and load.
+- When no node is connected, assume the previous nodeId.
+- On changing node, load the items from that node.
+- Once done with the queue, disconnect BT
+
 
 TODO list:
 - Chat screen. Conversation view. (use this? https://pub.dev/packages/bubble )
