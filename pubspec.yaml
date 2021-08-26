@@ -44,6 +44,7 @@ dependencies:
   geolocator: ^7.4.0
   bubble: ^1.2.1
   sqflite: ^2.0.0+4
+  archive: ^3.1.2
 
 dev_dependencies:
   flutter_test:

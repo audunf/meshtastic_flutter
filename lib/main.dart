@@ -21,6 +21,7 @@ import 'bluetooth/ble_device_interactor.dart';
 import 'bluetooth/ble_scanner.dart';
 import 'bluetooth/ble_status_monitor.dart';
 
+import 'cmd_queue/radio_cmd_queue.dart';
 import 'model/settings_model.dart';
 import 'screen/channel_screen.dart';
 import 'screen/chat_screen.dart';
@@ -78,6 +79,8 @@ void main() async {
     Permission.location,
   ].request();
   print("Permission status: " + statuses[Permission.location].toString());
+
+  RadioCommandQueue radioCmdQueue = RadioCommandQueue.instance; // get the singleton at startup
 
   final _logger = Logger(
     filter: null, // Use the default LogFilter (-> only log in debug mode)

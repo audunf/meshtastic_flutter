@@ -1,4 +1,5 @@
 import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
+import 'package:meshtastic_flutter/cmd_queue/radio_cmd_queue.dart';
 import 'package:meshtastic_flutter/model/settings_model.dart';
 import 'package:meshtastic_flutter/proto-autogen/mesh.pb.dart';
 import 'package:meshtastic_flutter/protocol/to_radio.dart';
@@ -19,6 +20,7 @@ class BleConnectionLogic {
   BleDeviceInteractor interactor;
   BleDataStreams bleDataStreams;
   SettingsModel settingsModel;
+
 
   bool _bleScanIsInProgress = false;
   BleStatus _currentBleStatus = BleStatus.unknown;
@@ -192,11 +194,28 @@ class BleConnectionLogic {
 
     int configId = DateTime.now().millisecondsSinceEpoch ~/ 1000; // unique number - sent back in config_complete_id (allow to discard old/stale)
     ToRadio pkt = MakeToRadio.wantConfig(configId);
-    await bleDataStreams.writeAndReadResponseUntilEmpty(deviceId, pkt);
+    RadioCommandQueue.instance.addToRadio(MeshUtils.convertBluetoothAddressToInt(deviceId), pkt);
 
-    // TODO: this doesn't work... might not be the right thing to do...
-    print("radioConfigRequest with deviceId=" + deviceId);
-    pkt = MakeToRadio.radioConfigRequest();
-    await bleDataStreams.writeAndReadResponseUntilEmpty(deviceId, pkt);
+    // Perhaps:
+    /*
+    1. all the logic for dealing with connections go in this class
+    2. what about "protocol logic" - i.e., what to send in response to different things? Or does that go somewhere else?
+    3. The radio_cmd_queue should deal directly with the ble_data_streams
+    4.
+     */
+
+    //await bleDataStreams.writeAndReadResponseUntilEmpty(deviceId, pkt);
+
+    // TODO: this doesn't work... might not be the right thing to do... - it doesn't work
+    //print("radioConfigRequest with deviceId=" + deviceId);
+    //pkt = MakeToRadio.radioConfigRequest();
+    //await bleDataStreams.writeAndReadResponseUntilEmpty(deviceId, pkt);
+
+    // how to do this?
+    /*
+    all commands should go into the radioCmdQueue.
+    Then all commands that have not been sent should be sent.
+    On response, they should be marked with ACK and dirty.
+     */
   }
 }
