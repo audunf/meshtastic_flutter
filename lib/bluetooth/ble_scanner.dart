@@ -28,7 +28,6 @@ class BleScanner implements ReactiveState<BleScannerState> {
   @override
   Stream<BleScannerState> get state => _stateStreamController.stream;
 
-
   /// ctor
   BleScanner({
     required FlutterReactiveBle ble,
@@ -59,6 +58,7 @@ class BleScanner implements ReactiveState<BleScannerState> {
 
   ///
   void _pushState() {
+    if (_stateStreamController.isClosed) return;
     _stateStreamController.add(
       BleScannerState(
         discoveredDevices: _devices,
@@ -74,6 +74,12 @@ class BleScanner implements ReactiveState<BleScannerState> {
     await _subscription?.cancel();
     _subscription = null;
     _pushState();
+  }
+
+
+  ///
+  isScanInProgress() {
+    return _subscription != null;
   }
 
 

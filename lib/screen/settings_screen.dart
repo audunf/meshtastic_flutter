@@ -118,7 +118,8 @@ class _DeviceListState extends State<_DeviceList> {
 
   @override
   void dispose() {
-    widget.stopScan();
+    // Don't call widget.stopScan(); here - because it will terminate the legitimate scanning for the selected device
+    // and if no ID is selected, it won't scan anyway
     super.dispose();
   }
 

@@ -6,6 +6,16 @@ MAP popup
 https://medium.com/zipper-studios/flutter-map-custom-and-dynamic-popup-over-the-marker-732d26ef9bc7
 
 # TODO 
+1. on having loaded the database with packet information - then play back the loaded packets through the ToRadio logic
+-> this is now a bit too "efficient". The same sequence of packages are loaded, then stored again. This is because packages from the DB are played as raw data.
+   Not sure how to handle this.
+   It's almost like it'd be easiest to delete the DB for this BT address immediately after reading it on startup. -> Won't work. We need older packets. 
+   It's either that, or comparing checksums and timestamps perhaps?
+   Only load X of type Y? 
+   Won't work: Load only the 10 last rows: SELECT * FROM mytable ORDER BY epoch_ms ASC LIMIT 10 OFFSET (SELECT COUNT(*) FROM mytable)-10;
+
+1. Only save those which 
+
 There needs to be: 
 1. A ToRadio command queue. Any actions get added to this queue. It's sent whenever the phone connects. 
 2. A FromRadio queue. This is the history of all that happened with a particular device. 

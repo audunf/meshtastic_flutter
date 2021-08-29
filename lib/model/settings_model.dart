@@ -27,13 +27,13 @@ class SettingsModel extends ChangeNotifier {
   /// Must be called with await before continuing
   Future<void> initializeSettingsFromStorage() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    _bluetoothEnabled = (prefs.getBool('bluetoothEnabled') ?? _bluetoothEnabled);
-    _bluetoothDeviceId = (prefs.getString('bluetoothDeviceId') ?? _bluetoothDeviceId);
-    _bluetoothDeviceName = (prefs.getString('bluetoothDeviceName') ?? _bluetoothDeviceName);
-    _userLongName =  (prefs.getString('userLongName') ?? _userLongName);
-    _userShortName =  (prefs.getString('userShortName') ?? _userShortName);
-    _myNodeNum = (prefs.getInt('myNodeNum') ?? _myNodeNum);
-    _regionCode = (prefs.getInt('regionCode') ?? _regionCode);
+    setBluetoothEnabled(prefs.getBool('bluetoothEnabled') ?? _bluetoothEnabled);
+    setBluetoothDeviceId(prefs.getString('bluetoothDeviceId') ?? _bluetoothDeviceId);
+    setBluetoothDeviceName(prefs.getString('bluetoothDeviceName') ?? _bluetoothDeviceName);
+    setUserLongName(prefs.getString('userLongName') ?? _userLongName);
+    setUserShortName(prefs.getString('userShortName') ?? _userShortName);
+    setMyNodeNum(prefs.getInt('myNodeNum') ?? _myNodeNum);
+    setRegionCode(prefs.getInt('regionCode') ?? _regionCode);
   }
 
   /// handle two competing/complementary ways to distribute state changes, and persist settings

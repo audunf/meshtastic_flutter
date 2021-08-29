@@ -7,6 +7,8 @@ class MakeToRadio {
   static List<int> sentPacketIdList = List.filled(0, 0, growable: true);
   static int currentPacketId = 0;
 
+
+
   // Ask node for initial configuration
   static ToRadio wantConfig(int id) {
     ToRadio tr = new ToRadio();

@@ -19,9 +19,13 @@ There needs to be:
  */
 
 ///
+///
+///
 enum RadioCommandDirection { toRadio, fromRadio }
+
 extension RadioCommandDirectionInteger on RadioCommandDirection {
   String get name => describeEnum(this);
+
 
   static RadioCommandDirection fromInt(int v) {
     if (v == 0)
@@ -29,6 +33,7 @@ extension RadioCommandDirectionInteger on RadioCommandDirection {
     else
       return RadioCommandDirection.fromRadio;
   }
+
 
   int toInt() {
     if (this.index == 0)
@@ -39,42 +44,54 @@ extension RadioCommandDirectionInteger on RadioCommandDirection {
 }
 
 ///
+///
+///
 class RadioCommand {
-  RadioCommandDirection direction;
-  int bluetoothId;
-  int timestamp;
+  RadioCommandDirection direction = RadioCommandDirection.toRadio;
+  int bluetoothId = 0;
+  int timestamp = 0;
   GeneratedMessage payload; // Both ToRadio and FromRadio inherit from GeneratedMessage
-  int? checksum;
+  int checksum = 0;
+  int payloadVariant = FromRadio_PayloadVariant.notSet.index; // TODO: could be dangerous if protobuf definition changes? Add own function to return int based on type?
   bool acknowledged = true; // For ToRadio -> has the radio acknowledged reception?
   bool stored = false; // has object been stored in the database before?
   bool dirty = false; // has object changed since it was stored?
 
-  RadioCommand(this.direction, this.bluetoothId, this.timestamp, this.acknowledged, this.payload, this.stored, this.dirty, [this.checksum]) {
-    if (this.checksum == null) {
-      this.checksum = Utils.makePackageChecksum(payload);
+
+  RadioCommand(this.direction, this.bluetoothId, this.timestamp, this.acknowledged, this.payload, this.stored, this.dirty) {
+    this.checksum = Utils.makePackageChecksum(payload);
+    if (direction == RadioCommandDirection.fromRadio) {
+      payloadVariant = Utils.fromRadioPayloadVariantToInteger(payload as FromRadio);
+    } else if (direction == RadioCommandDirection.toRadio) {
+      payloadVariant = Utils.toRadioPayloadVariantToInteger(payload as ToRadio);
     }
   }
 
+
   Map<String, dynamic> toMap() {
     return {
-      'direction': direction,
+      'direction': direction.toInt(),
       'bluetooth_id': bluetoothId,
-      'timestamp': timestamp,
+      'epoch_ms': timestamp,
       'checksum': checksum,
-      'acknowledged': acknowledged,
-      'stored': stored,
-      'dirty': dirty,
+      'acknowledged': (acknowledged ? 1 : 0),
+      'payload_variant': payloadVariant,
+      'stored': (stored ? 1 : 0),
+      'dirty': (dirty ? 1 : 0),
       'payload': payload.writeToBuffer()
     };
   }
+
 
   static RadioCommand makeFromRadio(int bluetoothId, FromRadio p) {
     return RadioCommand(RadioCommandDirection.fromRadio, bluetoothId, DateTime.now().toUtc().millisecond, false, p, false, true);
   }
 
+
   static RadioCommand makeToRadio(int bluetoothId, ToRadio p) {
-    return RadioCommand(RadioCommandDirection.fromRadio, bluetoothId, DateTime.now().toUtc().millisecond, false, p, false, true);
+    return RadioCommand(RadioCommandDirection.toRadio, bluetoothId, DateTime.now().toUtc().millisecond, false, p, false, true);
   }
+
 
   static RadioCommand fromMap(Map<String, dynamic> m) {
     GeneratedMessage payload;
@@ -86,49 +103,134 @@ class RadioCommand {
     } else {
       throw new ErrorDescription("payload from DB doesn't match ToRadio or FromRadio");
     }
-    return RadioCommand(RadioCommandDirectionInteger.fromInt(m['direction']), m['bluetooth_id'], m['timestamp'], m['acknowledged'], payload, m['stored'],
-        m['dirty'], m['checksum']);
+    return RadioCommand(
+        RadioCommandDirectionInteger.fromInt(m['direction']),
+        m['bluetooth_id'], m['epoch_ms'], (m['acknowledged'] == 0 ? false : true), payload,
+        (m['stored'] == 0 ? false : true), (m['dirty'] == 0 ? false : true));
   }
 }
 
+///
+///
 ///
 class RadioCommandQueue extends MeshtasticDb {
   RadioCommandQueue._internal();
   static final RadioCommandQueue _singleton = new RadioCommandQueue._internal();
   static RadioCommandQueue get instance => _singleton;
 
-  Queue<RadioCommand> _cmdQueue = new Queue<RadioCommand>();
+  int _bluetoothId = 0;
 
-  ///
-  addToRadio(int bluetoothId, ToRadio pkt) {
-    _cmdQueue.add(RadioCommand.makeToRadio(bluetoothId, pkt));
+  /// back of the queue are the most recent packets.
+  DoubleLinkedQueue<RadioCommand> _cmdQueue = new DoubleLinkedQueue<RadioCommand>();
+
+  /// set new BT ID, load all Radio packets for this device, return 'true' if ID actually changed
+  Future<bool> setBluetoothIdFromString(String hexId) async {
+    return await setBluetoothId(Utils.convertBluetoothAddressToInt(hexId));
+  }
+
+
+  /// set new BT ID, load all Radio packets for this device, return 'true' if ID actually changed
+  Future<bool> setBluetoothId(int id) async {
+    if (id == _bluetoothId) return false;
+    await save();
+    _cmdQueue.clear();
+    _bluetoothId = id;
+    return true;
+  }
+
+  /// Add to the front of the queue.
+  void addToRadioFront(ToRadio pkt) {
+    RadioCommand rc = RadioCommand.makeToRadio(_bluetoothId, pkt);
+    if (_hasPacketWithChecksum(rc.checksum)) {
+      print("addToRadioFront - reAddPacket");
+      _reAddPacket(rc);
+      return;
+    }
+    _cmdQueue.addFirst(rc);
   }
 
 
   ///
-  addFromRadio(int bluetoothId, FromRadio pkt) {
-    _cmdQueue.add(RadioCommand.makeFromRadio(bluetoothId, pkt));
+  void addToRadioBack(ToRadio pkt) {
+    RadioCommand rc = RadioCommand.makeToRadio(_bluetoothId, pkt);
+    if (_hasPacketWithChecksum(rc.checksum)) {
+      print("addToRadioFront - reAddPacket");
+      _reAddPacket(rc);
+      return;
+    }
+    _cmdQueue.addLast(rc);
   }
 
 
   ///
-  getFromRadioQueue() {
+  void addFromRadioBack(FromRadio pkt) {
+    RadioCommand rc = RadioCommand.makeFromRadio(_bluetoothId, pkt);
+    if (_hasPacketWithChecksum(rc.checksum)) {
+      print("addToRadioFront - reAddPacket");
+      _reAddPacket(rc);
+      return;
+    }
+    _cmdQueue.addLast(rc);
+  }
+
+
+  ///
+  Queue<RadioCommand> getFromRadioQueue() {
     return Queue.from(_cmdQueue.where((r) => r.direction == RadioCommandDirection.fromRadio));
   }
 
 
   ///
-  getToRadioQueue({bool acknowledged = false}) {
+  Queue<RadioCommand> getToRadioQueue({bool acknowledged = false}) {
     return Queue.from(_cmdQueue.where((r) => r.direction == RadioCommandDirection.toRadio && r.acknowledged == acknowledged));
+  }
+
+
+  /// True if packet with checksum is present in queue
+  bool _hasPacketWithChecksum(int checksum) {
+    return _cmdQueue.any((RadioCommand e) => e.checksum == checksum);
+  }
+
+
+  /// Has un-acknowledged (unsent) packets
+  bool hasUnAcknowledgedToRadioPackets() {
+    return _cmdQueue.any((RadioCommand e) => e.direction == RadioCommandDirection.toRadio && e.acknowledged == false);
+  }
+
+
+  /// When same packet is seen 'again' (same checksum), remove old, add new to get the timestamps right
+  void _reAddPacket(RadioCommand rc) {
+    _cmdQueue.removeWhere((RadioCommand e) => e.checksum == rc.checksum && e.bluetoothId == rc.bluetoothId && e.direction == rc.direction);
+    rc.dirty = true;
+    rc.stored = false;
+    // clean up the database - easier to delete the old packet than try to update it
+    database.then((db) {
+      return db.delete('radio_command',
+          where: 'direction=? AND bluetooth_id=? AND checksum=?',
+          whereArgs: [rc.direction.index, rc.bluetoothId, rc.checksum]);
+    });
+    _cmdQueue.addLast(rc);
+  }
+
+
+  /// mark all packets in the queue as Clean and *not* Dirty
+  void markAllStoredAndClean() {
+    _cmdQueue.forEach((RadioCommand e) {
+      e.dirty = false;
+      e.stored = true;
+    });
   }
 
 
   ///
   save() async {
+    int countInsert = 0;
+    int countUpdate = 0;
+    print("RadioCommandQueue::save");
     if (_cmdQueue.isEmpty) return;
 
     return database.then((db) {
-      return db?.transaction((txn) async {
+      return db.transaction((txn) async {
         var batch = txn.batch();
         for (var i in _cmdQueue) {
           if (i.stored == true && i.dirty == false) continue;
@@ -137,14 +239,20 @@ class RadioCommandQueue extends MeshtasticDb {
             i.stored = true;
             i.dirty = false;
             var m = i.toMap();
-            batch.update('radio_command', m, where: 'direction=?, bluetooth_id=?, epoch_ms=?', whereArgs: [m['direction'], m['bluetooth_id'], m['epoch_ms']]);
+            batch.update('radio_command',
+                m,
+                where: 'direction=? AND bluetooth_id=? AND epoch_ms=? AND payload_variant=?',
+                whereArgs: [m['direction'], m['bluetooth_id'], m['epoch_ms'], m['payload_variant']]);
+            ++countUpdate;
           } else if (i.stored == false) {
             i.stored = true;
             i.dirty = false;
             var m = i.toMap();
             batch.insert('radio_command', m);
+            ++countInsert;
           }
         }
+        print("RadioCommandQueue::save - insert=$countInsert update=$countUpdate");
         return batch.commit(noResult: true);
       });
     }).catchError((e, s) {
@@ -152,18 +260,4 @@ class RadioCommandQueue extends MeshtasticDb {
     });
   }
 
-
-  ///
-  load(int bluetoothId) async {
-    var timeAgo = DateTime.now().subtract(Duration(days: 2));
-
-    return database.then((db) => db?.rawQuery('SELECT * FROM radio_command WHERE bluetooth_id=? AND epoch_ms > ? ORDER BY epoch_ms ASC;', [bluetoothId, timeAgo.millisecond]).then((rLst) {
-      if (rLst.length <= 0) return;
-      for (var m in rLst) {
-        _cmdQueue.add(RadioCommand.fromMap(m));
-      }
-    })).catchError((e, s) {
-      print('RadioCommandQueue::load - exception $e $s');
-    });
-  }
 }

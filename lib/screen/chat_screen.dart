@@ -2,11 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:meshtastic_flutter/model/tab_definition.dart';
 import 'package:meshtastic_flutter/widget/bluetooth_connection_icon.dart';
-import 'package:provider/provider.dart';
-import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
 import 'package:bubble/bubble.dart';
-import 'package:bubble/issue_clipper.dart';
-import 'package:meshtastic_flutter/bluetooth/ble_scanner.dart';
+
 
 class ChatScreen extends StatelessWidget {
   final TabDefinition tabDefinition;
@@ -35,7 +32,7 @@ class ChatScreen extends StatelessWidget {
     showNip: true,
   );
 
-  const ChatScreen({Key? key, required TabDefinition this.tabDefinition}) : super(key: key);
+  const ChatScreen({Key? key, required this.tabDefinition}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {

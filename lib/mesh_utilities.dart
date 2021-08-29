@@ -1,6 +1,5 @@
 
 import 'package:intl/intl.dart';  //for date format
-import 'package:intl/date_symbol_data_local.dart';
 import 'package:archive/archive_io.dart' as archive;
 
 import 'package:latlong2/latlong.dart';
@@ -71,4 +70,14 @@ int makePackageChecksum(GeneratedMessage msg) {
 int convertBluetoothAddressToInt(String hex) {
   // remove all the ':'
   return int.parse(hex.replaceAll(RegExp(r':'), ''), radix: 16);
+}
+
+/// Convert FromRadio.whichPayloadVariant() to integer
+int fromRadioPayloadVariantToInteger(FromRadio x) {
+  return x.whichPayloadVariant().index; // This might break the DB if new enum values are introduced at the start of definition in protobuf-land
+}
+
+/// Convert ToRadio.whichPayloadVariant() to integer
+int toRadioPayloadVariantToInteger(ToRadio x) {
+  return x.whichPayloadVariant().index; // This might break the DB if new enum values are introduced at the start of definition in protobuf-land
 }

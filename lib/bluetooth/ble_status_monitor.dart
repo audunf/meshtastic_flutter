@@ -14,6 +14,10 @@ class BleStatusMonitor implements ReactiveState<BleStatus?> {
     });
   }
 
+  dispose() {
+    _ctrl.close();
+  }
+
   @override
   Stream<BleStatus> get state => _ctrl.stream;
 }

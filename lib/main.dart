@@ -6,8 +6,6 @@ import 'package:logger/logger.dart';
 import 'package:meshtastic_flutter/model/mesh_data_model.dart';
 import 'package:meshtastic_flutter/proto-autogen/mesh.pb.dart';
 import 'package:meshtastic_flutter/protocol/app_from_radio_handler.dart';
-import 'package:meshtastic_flutter/protocol/to_radio.dart';
-import 'package:meshtastic_flutter/widget/bluetooth_connection_icon.dart';
 import 'package:meshtastic_flutter/model/tab_definition.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
@@ -94,8 +92,6 @@ void main() async {
         printTime: false // Should each log print contain a timestamp
         ),
   );
-  final _settings = SettingsModel();
-  await _settings.initializeSettingsFromStorage(); // read initial settings from storage
 
   final _meshDataModel = MeshDataModel();
   final _ble = FlutterReactiveBle();
@@ -113,6 +109,7 @@ void main() async {
     subscribeToCharacteristic: _ble.subscribeToCharacteristic,
     logMessage: _logger.i,
   );
+  final _settings = SettingsModel();
 
   final _bleDataStreams =
       BleDataStreams(deviceInteractor: _interactor, bleDeviceConnector: _connector, bleStatusMonitor: _monitor); // raw and FromRadio data streams
@@ -121,6 +118,8 @@ void main() async {
 
   final _bleConnectionLogic = BleConnectionLogic(
       settingsModel: _settings, scanner: _scanner, monitor: _monitor, connector: _connector, interactor: _interactor, bleDataStreams: _bleDataStreams);
+
+  await _settings.initializeSettingsFromStorage(); // read initial settings from storage (do this after init of _bleConnectionLogic - to allow it to listen for changes)
 
   runApp(MultiProvider(
     providers: [

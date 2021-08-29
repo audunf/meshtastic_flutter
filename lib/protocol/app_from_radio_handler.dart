@@ -33,10 +33,10 @@ class AppFromRadioHandler {
         return _handleNodeInfo(fr.nodeInfo);
       case FromRadio_PayloadVariant.configCompleteId:
         print("** configCompleteId " + fr.configCompleteId.toString());
-        return;
+        return false;
       case FromRadio_PayloadVariant.rebooted:
         print("** rebooted " + fr.rebooted.toString());
-        return;
+        return false;
       case FromRadio_PayloadVariant.notSet:
         print("** notSet");
         return false;
@@ -85,10 +85,8 @@ class AppFromRadioHandler {
     switch (mp.whichPayloadVariant()) {
       case MeshPacket_PayloadVariant.decoded:
         return _handleDataPayload(mp.decoded);
-        break;
       case MeshPacket_PayloadVariant.encrypted:
         return _handleEncryptedPayload(mp.encrypted);
-        break;
       default:
         print("-> unknown packet payload variant " + mp.whichPayloadVariant().toString());
         break;
@@ -99,7 +97,6 @@ class AppFromRadioHandler {
     switch (d.portnum) {
       case PortNum.TEXT_MESSAGE_APP:
         return _handleTextMessagePortNum(d.payload);
-        break;
       case PortNum.REMOTE_HARDWARE_APP:
         return false;
       case PortNum.POSITION_APP:
