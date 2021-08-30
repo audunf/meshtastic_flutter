@@ -6,7 +6,7 @@ import 'package:meshtastic_flutter/cmd_queue/meshtastic_db.dart';
 import 'package:meshtastic_flutter/cmd_queue/radio_cmd_queue.dart';
 import 'package:meshtastic_flutter/model/settings_model.dart';
 import 'package:meshtastic_flutter/proto-autogen/mesh.pb.dart';
-import 'package:meshtastic_flutter/protocol/to_radio.dart';
+import 'package:meshtastic_flutter/protocol/make_to_radio.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:tuple/tuple.dart';
 
@@ -231,19 +231,19 @@ class BleConnectionLogic {
 
   /// When attached to the radio, send all the ToRadio packets
   Future<void> _sendToRadioCommandQueue() async {
-    if (_currentConnectionState != DeviceConnectionState.connected) return;
-
     Queue<RadioCommand> pLst = RadioCommandQueue.instance.getToRadioQueue(acknowledged: false); // all packets that haven't been sent yet
     for (var p in pLst) {
       ToRadio tr = p.payload as ToRadio;
       // normally, just write whatever packets
-      return bleDataStreams.writeData(p.bluetoothId, tr).then(() {}).catchError((e) {
+      try {
+        await bleDataStreams.writeData(p.getBluetoothIdAsString(), tr);
+      } catch(e) {
         print("_sendRadioCommandQueue error when sending BT: $e");
-      }).whenComplete(() {
+      } finally {
         // TODO: do something more sensible about the "ack". Preferably only mark as "acknowledged" once radio actually said so. Is that possible?
         p.acknowledged = true; // mark packet as sent
         p.dirty = true; // mark as needing save
-      });
+      }
     }
   }
 

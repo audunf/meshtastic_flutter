@@ -67,6 +67,11 @@ class RadioCommand {
     }
   }
 
+  String getBluetoothIdAsString() {
+    String id = Utils.convertBluetoothAddressToString(this.bluetoothId);
+    print ("getBluetoothIdAsString $id");
+    return id;
+  }
 
   Map<String, dynamic> toMap() {
     return {
@@ -139,7 +144,8 @@ class RadioCommandQueue extends MeshtasticDb {
   }
 
   /// Add to the front of the queue.
-  void addToRadioFront(ToRadio pkt) {
+  /*
+  void _addToRadioFront(ToRadio pkt) {
     RadioCommand rc = RadioCommand.makeToRadio(_bluetoothId, pkt);
     if (_hasPacketWithChecksum(rc.checksum)) {
       print("addToRadioFront - reAddPacket");
@@ -148,6 +154,7 @@ class RadioCommandQueue extends MeshtasticDb {
     }
     _cmdQueue.addFirst(rc);
   }
+   */
 
 
   ///

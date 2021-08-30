@@ -72,6 +72,19 @@ int convertBluetoothAddressToInt(String hex) {
   return int.parse(hex.replaceAll(RegExp(r':'), ''), radix: 16);
 }
 
+/// bluetooth ID: int (6*8 = 48 bit) -> 08:3A:F2:44:BB:0A
+///083AF244BB0A
+String convertBluetoothAddressToString(int addr) {
+  String h = addr.toRadixString(16).toUpperCase().padLeft(12, '0');
+  RegExp exp = new RegExp(r"[0-9A-Z]{2}");
+  Iterable<Match> matches = exp.allMatches(h);
+  var list = matches.map((m) => m.group(0));
+  var s = list.join(":");
+  print("convertBluetoothAddressToString $s");
+  return s;
+}
+
+
 /// Convert FromRadio.whichPayloadVariant() to integer
 int fromRadioPayloadVariantToInteger(FromRadio x) {
   return x.whichPayloadVariant().index; // This might break the DB if new enum values are introduced at the start of definition in protobuf-land

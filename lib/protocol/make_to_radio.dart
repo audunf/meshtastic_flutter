@@ -1,18 +1,23 @@
+import 'dart:convert' show utf8;
 import 'package:meshtastic_flutter/proto-autogen/admin.pb.dart';
 import 'package:meshtastic_flutter/proto-autogen/mesh.pb.dart';
 import 'package:meshtastic_flutter/proto-autogen/portnums.pb.dart';
 import 'package:meshtastic_flutter/proto-autogen/radioconfig.pb.dart';
 
 class MakeToRadio {
-  static List<int> sentPacketIdList = List.filled(0, 0, growable: true);
   static int currentPacketId = 0;
-
-
 
   // Ask node for initial configuration
   static ToRadio wantConfig(int id) {
     ToRadio tr = new ToRadio();
     tr.wantConfigId = id;
+    return tr;
+  }
+
+  static ToRadio textMessageApp(int fromNodeId, String text) {
+    Data d = new Data(portnum: PortNum.TEXT_MESSAGE_APP, payload: utf8.encode(text), wantResponse: false);
+    MeshPacket mp = new MeshPacket(from: fromNodeId, id: ++currentPacketId, hopLimit: 3, wantAck: true, priority: MeshPacket_Priority.DEFAULT, decoded: d);
+    ToRadio tr = new ToRadio(packet: mp);
     return tr;
   }
 
@@ -69,7 +74,6 @@ class MakeToRadio {
     mp.to = toNodeId;
     mp.channel = channel;
     mp.id = ++currentPacketId;
-    sentPacketIdList.add(mp.id); // keep track of sent packet IDs
     mp.hopLimit = 3;
     mp.wantAck = true;
     mp.priority = MeshPacket_Priority.DEFAULT;
@@ -102,12 +106,10 @@ class MakeToRadio {
 
     MeshPacket mp = new MeshPacket();
     mp.id = ++currentPacketId;
-    sentPacketIdList.add(mp.id); // keep track of sent packet IDs
 
     ToRadio tr = new ToRadio();
     tr.packet = mp;
     tr.packet.decoded = d;
     return tr;
   }
-
 }

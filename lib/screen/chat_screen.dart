@@ -1,12 +1,38 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:meshtastic_flutter/cmd_queue/radio_cmd_queue.dart';
+import 'package:meshtastic_flutter/model/mesh_data_model.dart';
 import 'package:meshtastic_flutter/model/tab_definition.dart';
+import 'package:meshtastic_flutter/protocol/make_to_radio.dart';
 import 'package:meshtastic_flutter/widget/bluetooth_connection_icon.dart';
 import 'package:bubble/bubble.dart';
+import 'package:provider/provider.dart';
 
-
-class ChatScreen extends StatelessWidget {
+class ChatScreen extends StatefulWidget {
   final TabDefinition tabDefinition;
+
+  const ChatScreen({Key? key, required this.tabDefinition}) : super(key: key);
+
+  @override
+  _ChatScreenState createState() => _ChatScreenState(tabDefinition: tabDefinition);
+}
+
+
+class _ChatScreenState extends State<ChatScreen> {
+  final TabDefinition tabDefinition;
+  TextEditingController _chatEditCtrl = TextEditingController();
+
+  _ChatScreenState({required this.tabDefinition}) : super();
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+  }
 
   static const styleSomebody = BubbleStyle(
     margin: const BubbleEdges.only(top: 5),
@@ -31,8 +57,6 @@ class ChatScreen extends StatelessWidget {
     color: Colors.green,
     showNip: true,
   );
-
-  const ChatScreen({Key? key, required this.tabDefinition}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -104,7 +128,7 @@ class ChatScreen extends StatelessWidget {
                     onFieldSubmitted: (String value) {},
                   ))),
                   Padding(
-                      padding: EdgeInsets.fromLTRB(5, 0,0,0), // add some space to the text input box
+                      padding: EdgeInsets.fromLTRB(5, 0, 0, 0), // add some space to the text input box
                       child: ClipRRect(
                           borderRadius: BorderRadius.circular(4),
                           child: Stack(children: <Widget>[
@@ -121,15 +145,18 @@ class ChatScreen extends StatelessWidget {
                                 ),
                               ),
                             ),
-                            TextButton(
-                              style: TextButton.styleFrom(
-                                padding: const EdgeInsets.all(16.0),
-                                primary: Colors.white,
-                                textStyle: const TextStyle(fontSize: 20),
-                              ),
-                              onPressed: () {},
-                              child: const Text('Send'),
-                            )
+                            Consumer<MeshDataModel>(
+                                builder: (ctx, meshDataModel, __) => TextButton(
+                                      style: TextButton.styleFrom(
+                                        padding: const EdgeInsets.all(16.0),
+                                        primary: Colors.white,
+                                        textStyle: const TextStyle(fontSize: 20),
+                                      ),
+                                      onPressed: () {
+                                        RadioCommandQueue.instance.addToRadioBack(MakeToRadio.textMessageApp(meshDataModel.myNodeInfo.myNodeNum, _chatEditCtrl.text));
+                                      },
+                                      child: const Text('Send'),
+                                    ))
                           ])))
                 ])
               ]))

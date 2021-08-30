@@ -98,6 +98,7 @@ class AppFromRadioHandler {
       case PortNum.TEXT_MESSAGE_APP:
         return _handleTextMessagePortNum(d.payload);
       case PortNum.REMOTE_HARDWARE_APP:
+        print("PortNum.REMOTE_HARDWARE_APP");
         return false;
       case PortNum.POSITION_APP:
         return _handlePositionPortNum(d.payload);

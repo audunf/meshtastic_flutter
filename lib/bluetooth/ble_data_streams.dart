@@ -90,32 +90,48 @@ class BleDataStreams {
   }
 
   /// write a ToRadio packet, and keep reading responses until empty
-  writeAndReadResponseUntilEmpty(deviceId, ToRadio pkt) async {
+  writeAndReadResponseUntilEmpty(String deviceId, ToRadio pkt) async {
     final writeC = getCharacteristic(deviceId, Constants.writeToRadioCharacteristicId);
+    if (_deviceConnectionState != DeviceConnectionState.connected) {
+      print("writeAndReadResponseUntilEmpty - _deviceConnectionState is not CONNECTED - early return");
+      return;
+    }
     await _deviceInteractor.writeCharacteristicWithResponse(writeC, pkt.writeToBuffer());
     return await readResponseUntilEmpty(deviceId);
   }
 
   /// write a ToRadio packet
-  writeData(deviceId, ToRadio pkt) async {
+  writeData(String deviceId, ToRadio pkt) async {
     final writeC = getCharacteristic(deviceId, Constants.writeToRadioCharacteristicId);
+    if (_deviceConnectionState != DeviceConnectionState.connected) {
+      print("writeData - _deviceConnectionState is not CONNECTED - early return");
+      return;
+    }
     return await _deviceInteractor.writeCharacteristicWithResponse(writeC, pkt.writeToBuffer());
   }
 
   /// read data until device returns "empty"
-  readResponseUntilEmpty(deviceId) async {
+  readResponseUntilEmpty(String deviceId) async {
     final readC = getCharacteristic(deviceId, Constants.readFromRadioCharacteristicId);
     var isEmpty = false;
     while (!isEmpty) {
+      if (_deviceConnectionState != DeviceConnectionState.connected) {
+        print("readResponseUntilEmpty - _deviceConnectionState is not CONNECTED - early return");
+        break;
+      }
       List<int> buf = await _deviceInteractor.readCharacteristic(readC);
       isEmpty = buf.isEmpty;
-      if (!isEmpty) _rawFromRadioStreamController.sink.add(buf);
+      if (!isEmpty && !_rawFromRadioStreamController.isClosed) {
+        _rawFromRadioStreamController.sink.add(buf);
+      }
     }
   }
 
   /// inject a
   addRawPacketToFromRadioSink(FromRadio p) {
-    _rawFromRadioStreamController.sink.add(p.writeToBuffer());
+    if (!_rawFromRadioStreamController.isClosed) {
+      _rawFromRadioStreamController.sink.add(p.writeToBuffer());
+    }
   }
 
   /// getter for raw stream of bytes
@@ -128,7 +144,7 @@ class BleDataStreams {
     return _fromRadioStreamController.stream;
   }
 
-  getCharacteristic(deviceIdParam, characteristicIdParam) {
+  getCharacteristic(String deviceIdParam, Uuid characteristicIdParam) {
     return QualifiedCharacteristic(serviceId: Constants.meshtasticServiceId, characteristicId: characteristicIdParam, deviceId: deviceIdParam);
   }
 
