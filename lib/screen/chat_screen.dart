@@ -17,7 +17,6 @@ class ChatScreen extends StatefulWidget {
   _ChatScreenState createState() => _ChatScreenState(tabDefinition: tabDefinition);
 }
 
-
 class _ChatScreenState extends State<ChatScreen> {
   final TabDefinition tabDefinition;
   TextEditingController _chatEditCtrl = TextEditingController();
@@ -108,6 +107,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   Expanded(
                       child: IntrinsicHeight(
                           child: TextFormField(
+                    controller: _chatEditCtrl,
                     keyboardType: TextInputType.multiline,
                     style: TextStyle(fontSize: 18),
                     maxLines: null, // If the maxLines property is null, there is no limit to the number of lines, and the wrap is enabled.
@@ -153,7 +153,9 @@ class _ChatScreenState extends State<ChatScreen> {
                                         textStyle: const TextStyle(fontSize: 20),
                                       ),
                                       onPressed: () {
-                                        RadioCommandQueue.instance.addToRadioBack(MakeToRadio.textMessageApp(meshDataModel.myNodeInfo.myNodeNum, _chatEditCtrl.text));
+                                        print("SEND pressed. Data='${_chatEditCtrl.text.trim()}'");
+                                        RadioCommandQueue.instance
+                                            .addToRadioBack(MakeToRadio.textMessageApp(meshDataModel.myNodeInfo.myNodeNum, _chatEditCtrl.text.trim()));
                                       },
                                       child: const Text('Send'),
                                     ))

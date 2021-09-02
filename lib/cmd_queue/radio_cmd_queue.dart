@@ -45,7 +45,7 @@ extension RadioCommandDirectionInteger on RadioCommandDirection {
 
 ///
 ///
-///
+/// TODO: look at https://github.com/meshtastic/Meshtastic-Android/blob/4d9ae0df730d8c37246c002de1c95609a512e296/app/src/main/java/com/geeksville/mesh/DataPacket.kt
 class RadioCommand {
   RadioCommandDirection direction = RadioCommandDirection.toRadio;
   int bluetoothId = 0;

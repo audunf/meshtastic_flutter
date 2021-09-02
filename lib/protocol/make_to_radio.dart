@@ -7,6 +7,8 @@ import 'package:meshtastic_flutter/proto-autogen/radioconfig.pb.dart';
 class MakeToRadio {
   static int currentPacketId = 0;
 
+  static const int NODENUM_BROADCAST = 0xffffffff;
+
   // Ask node for initial configuration
   static ToRadio wantConfig(int id) {
     ToRadio tr = new ToRadio();
@@ -14,9 +16,10 @@ class MakeToRadio {
     return tr;
   }
 
-  static ToRadio textMessageApp(int fromNodeId, String text) {
-    Data d = new Data(portnum: PortNum.TEXT_MESSAGE_APP, payload: utf8.encode(text), wantResponse: false);
-    MeshPacket mp = new MeshPacket(from: fromNodeId, id: ++currentPacketId, hopLimit: 3, wantAck: true, priority: MeshPacket_Priority.DEFAULT, decoded: d);
+  static ToRadio textMessageApp(int fromNodeId, String msgData, [toNodeId = MakeToRadio.NODENUM_BROADCAST]) {
+    print("sending TEXT message '$msgData'. Length: ${msgData.length}");
+    Data d = new Data(portnum: PortNum.TEXT_MESSAGE_APP, payload: utf8.encode(msgData), wantResponse: false);
+    MeshPacket mp = new MeshPacket(id: ++currentPacketId, from: fromNodeId, to: toNodeId, hopLimit: 3, wantAck: true, priority: MeshPacket_Priority.DEFAULT, decoded: d);
     ToRadio tr = new ToRadio(packet: mp);
     return tr;
   }

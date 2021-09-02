@@ -14,32 +14,11 @@ https://medium.com/zipper-studios/flutter-map-custom-and-dynamic-popup-over-the-
    Only load X of type Y? 
    Won't work: Load only the 10 last rows: SELECT * FROM mytable ORDER BY epoch_ms ASC LIMIT 10 OFFSET (SELECT COUNT(*) FROM mytable)-10;
 
-1. Only save those which 
-
-I/flutter (26368): }
-I/flutter (26368): position: {
-I/flutter (26368):   batteryLevel: 52
-I/flutter (26368):   time: 1630359486
-I/flutter (26368): }
-I/flutter (26368): lastHeard: 1630359490
-I/flutter (26368): snr: 10.5
-I/flutter (26368): ** configCompleteId 1630359502
-I/flutter (26368): ** handleMeshPacket
-I/flutter (26368): *** handlePositionPortNum: batteryLevel: 52
-I/flutter (26368): time: 1630359486
-E/flutter (26368): [ERROR:flutter/lib/ui/ui_dart_state.cc(199)] Unhandled Exception: type 'int' is not a subtype of type 'String'
-E/flutter (26368): #0      BleDataStreams.getCharacteristic (package:meshtastic_flutter/bluetooth/ble_data_streams.dart:132:129)
-E/flutter (26368): #1      BleDataStreams.writeData (package:meshtastic_flutter/bluetooth/ble_data_streams.dart:101:20)
-E/flutter (26368): #2      BleConnectionLogic._sendToRadioCommandQueue (package:meshtastic_flutter/bluetooth/ble_connection_logic.dart:240:29)
-E/flutter (26368): #3      BleConnectionLogic._btConnectionUpdateHandler (package:meshtastic_flutter/bluetooth/ble_connection_logic.dart:219:13)
-E/flutter (26368): <asynchronous suspension>
-E/flutter (26368):
-E/flutter (26368): [ERROR:flutter/lib/ui/ui_dart_state.cc(199)] Unhandled Exception: type '() => Null' is not a subtype of type '(dynamic) => dynamic' of 'f'
-E/flutter (26368): #0      BleConnectionLogic._sendToRadioCommandQueue (package:meshtastic_flutter/bluetooth/ble_connection_logic.dart:240:58)
-E/flutter (26368): #1      BleConnectionLogic._btConnectionUpdateHandler (package:meshtastic_flutter/bluetooth/ble_connection_logic.dart:219:13)
-E/flutter (26368): <asynchronous suspension>
-E/flutter (26368):
-
+   
+On writing the text message packet: 
+** handleMeshPacket
+I/flutter (20705): *** handleRoutingPortNum: errorReason: MAX_RETRANSMIT
+"We reached the max retransmission count (typically for naive flood routing)"
 
 There needs to be: 
 1. A ToRadio command queue. Any actions get added to this queue. It's sent whenever the phone connects. 

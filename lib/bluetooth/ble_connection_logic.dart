@@ -218,7 +218,7 @@ class BleConnectionLogic {
       await _sendWantConfig(s.deviceId);
       await _sendToRadioCommandQueue(); // send all other pending commands
 
-      Future.delayed(const Duration(milliseconds: 1000), () async {
+      Future.delayed(const Duration(milliseconds: 5000), () async {
         await connector.disconnect(s.deviceId); // disconnect after a delay
       });
 
@@ -232,6 +232,7 @@ class BleConnectionLogic {
   /// When attached to the radio, send all the ToRadio packets
   Future<void> _sendToRadioCommandQueue() async {
     Queue<RadioCommand> pLst = RadioCommandQueue.instance.getToRadioQueue(acknowledged: false); // all packets that haven't been sent yet
+    print('_sendToRadioCommandQueue length: ${pLst.length}');
     for (var p in pLst) {
       ToRadio tr = p.payload as ToRadio;
       // normally, just write whatever packets
@@ -243,6 +244,7 @@ class BleConnectionLogic {
         // TODO: do something more sensible about the "ack". Preferably only mark as "acknowledged" once radio actually said so. Is that possible?
         p.acknowledged = true; // mark packet as sent
         p.dirty = true; // mark as needing save
+        print('_sendToRadioCommandQueue -> DONE');
       }
     }
   }
@@ -284,13 +286,17 @@ class BleConnectionLogic {
     List<RadioCommand> cmdLst = <RadioCommand>[];
 
     Database db = await MeshtasticDb().database;
+    // TODO can't just load "fromRadio" - need toRadio as well. Messages go both ways. But need to filter more of what is saved first. And need to fix the 'ack' vs 'nack' of ToRadio packets
     List<Map<String, Object?>> rLst = await db.rawQuery(
         'SELECT * FROM radio_command WHERE bluetooth_id=? AND direction = ? AND epoch_ms > ? ORDER BY epoch_ms DESC;',
         [MeshUtils.convertBluetoothAddressToInt(bluetoothId), RadioCommandDirection.fromRadio.index, timeAgo.millisecond]);
     print(" -> query returned: ${rLst.length} rows");
     for (var m in rLst) {
       // packets in ascending order (timestamp), newest to oldest, so add to back of queue
-      cmdLst.add(RadioCommand.fromMap(m));
+      RadioCommand rc = RadioCommand.fromMap(m);
+      rc.stored = true;
+      rc.dirty = false;
+      cmdLst.add(rc);
     }
     return cmdLst;
   }
