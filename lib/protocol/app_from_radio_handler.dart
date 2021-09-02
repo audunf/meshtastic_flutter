@@ -1,3 +1,4 @@
+import 'dart:convert' show utf8;
 import 'package:meshtastic_flutter/bluetooth/ble_data_streams.dart';
 import 'package:meshtastic_flutter/model/mesh_data_model.dart';
 import 'package:meshtastic_flutter/model/settings_model.dart';
@@ -16,6 +17,17 @@ class AppFromRadioHandler {
   final MeshDataModel meshDataModel;
   final SettingsModel settingsModel;
   final BleDataStreams bleDataStreams;
+
+  /// get text message payload as String
+  static String getTextMessageUtf8Payload(FromRadio fr) {
+    if (fr.whichPayloadVariant() == FromRadio_PayloadVariant.packet &&
+        fr.packet.whichPayloadVariant() == MeshPacket_PayloadVariant.decoded &&
+        fr.packet.decoded.portnum == PortNum.TEXT_MESSAGE_APP && fr.packet.decoded.payload.length > 0)
+    {
+      return utf8.decode(fr.packet.decoded.payload);
+    }
+    return "";
+  }
 
   AppFromRadioHandler({required this.bleDataStreams, required this.settingsModel, required this.meshDataModel}) {
     bleDataStreams.fromRadioStream.listen(_handleFromRadio);

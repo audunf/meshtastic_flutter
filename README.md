@@ -6,40 +6,21 @@ MAP popup
 https://medium.com/zipper-studios/flutter-map-custom-and-dynamic-popup-over-the-marker-732d26ef9bc7
 
 # TODO 
-1. on having loaded the database with packet information - then play back the loaded packets through the ToRadio logic
--> this is now a bit too "efficient". The same sequence of packages are loaded, then stored again. This is because packages from the DB are played as raw data.
-   Not sure how to handle this.
-   It's almost like it'd be easiest to delete the DB for this BT address immediately after reading it on startup. -> Won't work. We need older packets. 
-   It's either that, or comparing checksums and timestamps perhaps?
-   Only load X of type Y? 
-   Won't work: Load only the 10 last rows: SELECT * FROM mytable ORDER BY epoch_ms ASC LIMIT 10 OFFSET (SELECT COUNT(*) FROM mytable)-10;
-
-   
-On writing the text message packet: 
-** handleMeshPacket
-I/flutter (20705): *** handleRoutingPortNum: errorReason: MAX_RETRANSMIT
-"We reached the max retransmission count (typically for naive flood routing)"
-
-There needs to be: 
-1. A ToRadio command queue. Any actions get added to this queue. It's sent whenever the phone connects. 
-2. A FromRadio queue. This is the history of all that happened with a particular device. 
-- Both of these need an SQLite DB, with NodeId as key. On connecting to a certain node, use that as key for the tables, and load.
-- When no node is connected, assume the previous nodeId.
-- On changing node, load the items from that node.
-- Once done with the queue, disconnect BT
-
 
 TODO list:
 - Chat screen. 
-  How to send a message?
-  Send message 
-  Receive message 
+  Display sent messages in the "Bubble" list
+  Add date/time and from info in "Bubble" list
+  Receive message
+    Display in Bubble list too. 
   Icon per message showing status - each message might get an icon similar to the one in the main status bar? Needs some research.
 - Improve the "People" screen. 
   Needs an icon for status of other nodes. 
   Battery of every node.
   Distance in meters?
-- Channel setup screen. With QR code. 
+- Settings screen
+  Setting Region and writing it to the device
+- Channel setup screen. With QR code. How does this work?  
 - Mesh status icon to go in the application title-bar. Need to do some research on how it works.  
 
 - Bluetooth
@@ -219,3 +200,23 @@ D/BluetoothGatt( 4119): unregisterApp() - mClientIf=13
 ------------
 After adding a custom channel called xyzzy to both, and sending two text messages (they appear as ^local)
 
+Bubble(
+-                  alignment: Alignment.center,
+-                  color: Colors.deepPurple,
+-                  borderColor: Colors.black12,
+-                  borderWidth: 2,
+-                  margin: const BubbleEdges.only(top: 8),
+-                  child: const Text(
+-                    'TODAY',
+-                    style: TextStyle(fontSize: 10),
+-                  ),
+-                ),
+
+-                Bubble(
+-                  style: styleSomebody,
+-                  child: const Text(
+-                    "I've been having a problem with my computer.",
+-                    style: TextStyle(fontSize: 16),
+-                  ),
+-                ),
+-              ]))

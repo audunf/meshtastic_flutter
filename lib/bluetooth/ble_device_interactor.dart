@@ -31,8 +31,9 @@ class BleDeviceInteractor {
       final result = await _bleDiscoverServices(deviceId);
       _logMessage('Discovering services finished');
       return result;
-    } on Exception catch (e) {
+    } on Exception catch (e, s) {
       _logMessage('Error occurred when discovering services: $e');
+      //print(s);
       rethrow;
     }
   }
@@ -44,9 +45,9 @@ class BleDeviceInteractor {
       return result;
     } on Exception catch (e, s) {
       _logMessage(
-        'Error occurred when reading ${characteristic.characteristicId} : $e',
+        'Error occurred when reading ${characteristic.characteristicId}: $e',
       );
-      print(s);
+      //print(s);
       rethrow;
     }
   }
@@ -57,9 +58,9 @@ class BleDeviceInteractor {
       await _writeWithResponse(characteristic, value: value);
     } on Exception catch (e, s) {
       _logMessage(
-        'Error occurred when writing ${characteristic.characteristicId} : $e',
+        'Error occurred when writing with response ${characteristic.characteristicId}: $e',
       );
-      print(s);
+      //print(s);
       rethrow;
     }
   }
@@ -70,15 +71,15 @@ class BleDeviceInteractor {
       //_logMessage('Write without response value: $value to ${characteristic.characteristicId}');
     } on Exception catch (e, s) {
       _logMessage(
-        'Error occurred when writing ${characteristic.characteristicId} : $e',
+        'Error occurred when writing without response ${characteristic.characteristicId}: $e',
       );
-      print(s);
+      //print(s);
       rethrow;
     }
   }
 
-  Stream<List<int>> subScribeToCharacteristic(QualifiedCharacteristic characteristic) {
-    _logMessage('Subscribing to: ${characteristic.characteristicId} ');
+  Stream<List<int>> subscribeToCharacteristic(QualifiedCharacteristic characteristic) {
+    _logMessage('Subscribing to: ${characteristic.characteristicId}');
     return _subScribeToCharacteristic(characteristic);
   }
 }

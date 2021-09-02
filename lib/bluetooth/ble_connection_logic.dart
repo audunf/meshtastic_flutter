@@ -2,8 +2,8 @@ import 'dart:async';
 import 'dart:collection';
 
 import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
-import 'package:meshtastic_flutter/cmd_queue/meshtastic_db.dart';
-import 'package:meshtastic_flutter/cmd_queue/radio_cmd_queue.dart';
+import 'package:meshtastic_flutter/model/meshtastic_db.dart';
+import 'package:meshtastic_flutter/model/radio_cmd_queue.dart';
 import 'package:meshtastic_flutter/model/settings_model.dart';
 import 'package:meshtastic_flutter/proto-autogen/mesh.pb.dart';
 import 'package:meshtastic_flutter/protocol/make_to_radio.dart';
@@ -25,6 +25,7 @@ class BleConnectionLogic {
   BleDeviceInteractor interactor;
   BleDataStreams bleDataStreams;
   SettingsModel settingsModel;
+  RadioCommandQueue radioCommandQueue;
 
   BleStatus _currentBleStatus = BleStatus.unknown;
   DeviceConnectionState _currentConnectionState = DeviceConnectionState.disconnected;
@@ -38,7 +39,8 @@ class BleConnectionLogic {
       required this.monitor,
       required this.connector,
       required this.interactor,
-      required this.bleDataStreams}) {
+      required this.bleDataStreams,
+      required this.radioCommandQueue}) {
     settingsModel.changeStream.listen(_settingsModelHandler);
     scanner.state.listen(_btScannerStateHandler);
     monitor.state.listen(_btStatusMonitorHandler);
@@ -48,7 +50,7 @@ class BleConnectionLogic {
     // periodic function which checks the command queue. If there are commands, then scan, which might lead to connect, which sends the packets
     Timer.periodic(Duration(seconds:5), (Timer t) {
       _periodicScan = t;
-      if (RadioCommandQueue.instance.hasUnAcknowledgedToRadioPackets()) {
+      if (radioCommandQueue.hasUnAcknowledgedToRadioPackets()) {
         _startScan();
       }
     });
@@ -83,7 +85,7 @@ class BleConnectionLogic {
     }
 
     print("BleConnectionLogic::_startScan -> starting scan");
-    scanner.startScan(<Uuid>[Constants.meshtasticServiceId], ScanMode.balanced);
+    scanner.startScan(<Uuid>[Constants.meshtasticServiceId], ScanMode.lowPower);
   }
 
 
@@ -138,23 +140,31 @@ class BleConnectionLogic {
     if (oldValue == newBluetoothId) return; // ignore if old/new device IDs are the same
 
     // On new BT deviceId, dump old data, and read any known data for new ID
-    bool btIdChanged = await RadioCommandQueue.instance.setBluetoothIdFromString(newBluetoothId);
+    bool btIdChanged = await radioCommandQueue.setBluetoothIdFromString(newBluetoothId);
     if (btIdChanged) { // ID changed - play back all the old FromRadio packets
-      List<RadioCommand> fromRadioCmdList = await _loadFromRadioPacketsFromDatabase(newBluetoothId);
-      RadioCommandQueue.instance.markAllStoredAndClean(); // The loaded packets don't need to be stored again - mark them all as Stored and !Dirty
+      print("_settingsBluetoothDeviceId oldBtId=$oldValue newBluetoothId=$newBluetoothId -> triggering save, purge, load, and playback or radio commands");
+      await radioCommandQueue.save();
+      radioCommandQueue.clearRadioQueue();
 
-      print("_settingsBluetoothDeviceId - playback ${fromRadioCmdList.length} FromRadio packets (add, but don't play back, the ToRadio packets)");
-      for (var rc in fromRadioCmdList) {
+      List<RadioCommand> dbRadioCmdList = await _loadRadioPacketsFromDatabase(newBluetoothId);
+      radioCommandQueue.markAllStoredAndClean(); // The loaded packets don't need to be stored again - mark them all as Stored and Clean (not Dirty)
+
+      print("_settingsBluetoothDeviceId - playback ${dbRadioCmdList.length} packets");
+      for (var rc in dbRadioCmdList) {
         // Adding raw packets to the sink means they go through the normal reception channel, as if they were received directly from the radio.
         // The idea is to avoid special logic for loading state from the DB ("out of band" so to speak), and just use the same logic for radio and DB
         // Whether that's a good idea or not remains to be seen...
-        bleDataStreams.addRawPacketToFromRadioSink(rc.payload as FromRadio);
+        if (rc.direction == RadioCommandDirection.fromRadio) {
+          bleDataStreams.addRawPacketToFromRadioSink(rc.payload as FromRadio);
+        } else if (rc.direction == RadioCommandDirection.toRadio) {
+          radioCommandQueue.addRadioCommandBack(rc); // add to queue, but don't play back through any channels (at least not yet)
+        }
       }
     }
 
     if (settingsModel.bluetoothEnabled == false) return; // ignore change to device ID if BT is disabled
-    if (MeshUtils.isValidBluetoothMac(oldValue) && scanner.isScanInProgress()) scanner.stopScan();
-    if (MeshUtils.isValidBluetoothMac(oldValue) && _currentConnectionState == DeviceConnectionState.connected) connector.disconnect(oldValue);
+    if (MeshUtils.isValidBluetoothMac(oldValue) && _currentConnectionState == DeviceConnectionState.connected) await connector.disconnect(oldValue);
+    if (MeshUtils.isValidBluetoothMac(oldValue) && scanner.isScanInProgress()) await scanner.stopScan();
     if (MeshUtils.isValidBluetoothMac(newBluetoothId)) _startScan();
   }
 
@@ -224,14 +234,14 @@ class BleConnectionLogic {
 
     } else if (s.connectionState == DeviceConnectionState.disconnected) { /// DISCONNECTED
       await bleDataStreams.disconnectDataStreams(s.deviceId);
-      RadioCommandQueue.instance.save(); // save command queues and whatever radio state on disconnect
+      radioCommandQueue.save(); // save command queues and whatever radio state on disconnect
     }
   }
 
 
   /// When attached to the radio, send all the ToRadio packets
   Future<void> _sendToRadioCommandQueue() async {
-    Queue<RadioCommand> pLst = RadioCommandQueue.instance.getToRadioQueue(acknowledged: false); // all packets that haven't been sent yet
+    Queue<RadioCommand> pLst = radioCommandQueue.getToRadioQueue(acknowledged: false); // all packets that haven't been sent yet
     print('_sendToRadioCommandQueue length: ${pLst.length}');
     for (var p in pLst) {
       ToRadio tr = p.payload as ToRadio;
@@ -254,7 +264,7 @@ class BleConnectionLogic {
   _sendWantConfig(String deviceId) async {
     print("_sendWantConfig with deviceId=" + deviceId);
     int configId = DateTime.now().millisecondsSinceEpoch ~/ 1000; // unique number - sent back in config_complete_id (allow to discard old/stale)
-    ToRadio pkt = MakeToRadio.wantConfig(configId);
+    ToRadio pkt = MakeToRadio.createWantConfig(configId);
 
     // wantConfig is special - we don't add the ToRadio packet to the command queue
     await bleDataStreams.writeAndReadResponseUntilEmpty(deviceId, pkt);
@@ -275,21 +285,21 @@ class BleConnectionLogic {
 
   /// Handle incoming FromRadio packets
   _fromRadioHandler(FromRadio pkt) {
-    RadioCommandQueue.instance.addFromRadioBack(pkt);
+    radioCommandQueue.addFromRadioBack(pkt);
   }
 
 
   ///
-  Future<List<RadioCommand>> _loadFromRadioPacketsFromDatabase(String bluetoothId) async {
+  Future<List<RadioCommand>> _loadRadioPacketsFromDatabase(String bluetoothId) async {
     print("_loadPacketsFromDatabase");
     var timeAgo = DateTime.now().subtract(Duration(days: 2));
     List<RadioCommand> cmdLst = <RadioCommand>[];
 
-    Database db = await MeshtasticDb().database;
-    // TODO can't just load "fromRadio" - need toRadio as well. Messages go both ways. But need to filter more of what is saved first. And need to fix the 'ack' vs 'nack' of ToRadio packets
+    Database db = await MeshtasticDb.database;
+    // Load from DB. Oldest first (Ascending order of epoch_ms)
     List<Map<String, Object?>> rLst = await db.rawQuery(
-        'SELECT * FROM radio_command WHERE bluetooth_id=? AND direction = ? AND epoch_ms > ? ORDER BY epoch_ms DESC;',
-        [MeshUtils.convertBluetoothAddressToInt(bluetoothId), RadioCommandDirection.fromRadio.index, timeAgo.millisecond]);
+        'SELECT * FROM radio_command WHERE bluetooth_id=? AND epoch_ms > ? ORDER BY epoch_ms ASC;',
+        [MeshUtils.convertBluetoothAddressToInt(bluetoothId), timeAgo.millisecond]);
     print(" -> query returned: ${rLst.length} rows");
     for (var m in rLst) {
       // packets in ascending order (timestamp), newest to oldest, so add to back of queue

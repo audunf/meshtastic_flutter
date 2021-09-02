@@ -12,15 +12,15 @@ import 'package:path_provider/path_provider.dart';
 class MeshtasticDb {
   // names used for database
   static final _initDB = AsyncMemoizer<Database>();
-  final String mainDatabaseName = 'meshtastic_flutter.db';
+  static final String mainDatabaseName = 'meshtastic_flutter.db';
 
   MeshtasticDb();
 
   ///
-  Future<Database> get database => _initDB.runOnce(() async => await _openDB());
+  static Future<Database> get database => _initDB.runOnce(() async => await _openDB());
 
   ///
-  Future<Database> _openDB() async {
+  static Future<Database> _openDB() async {
     // The path_provider plugin gets the right directory for Android or iOS.
     Directory documentsDirectory = await getApplicationDocumentsDirectory();
     String path = join(documentsDirectory.path, mainDatabaseName);
@@ -53,7 +53,7 @@ class MeshtasticDb {
 
 
   ///
-  Future<void> close() async {
+  static Future<void> close() async {
     var db = await database;
     await db.close();
   }

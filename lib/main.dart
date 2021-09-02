@@ -19,7 +19,7 @@ import 'bluetooth/ble_device_interactor.dart';
 import 'bluetooth/ble_scanner.dart';
 import 'bluetooth/ble_status_monitor.dart';
 
-import 'cmd_queue/radio_cmd_queue.dart';
+import 'model/radio_cmd_queue.dart';
 import 'model/settings_model.dart';
 import 'screen/channel_screen.dart';
 import 'screen/chat_screen.dart';
@@ -78,8 +78,6 @@ void main() async {
   ].request();
   print("Permission status: " + statuses[Permission.location].toString());
 
-  RadioCommandQueue radioCmdQueue = RadioCommandQueue.instance; // get the singleton at startup
-
   final _logger = Logger(
     filter: null, // Use the default LogFilter (-> only log in debug mode)
     output: null, // Use the default LogOutput (-> send everything to console);
@@ -93,6 +91,7 @@ void main() async {
         ),
   );
 
+  final RadioCommandQueue _radioCmdQueue = RadioCommandQueue();
   final _meshDataModel = MeshDataModel();
   final _ble = FlutterReactiveBle();
   final _scanner = BleScanner(ble: _ble, logMessage: _logger.i);
@@ -117,14 +116,22 @@ void main() async {
       bleDataStreams: _bleDataStreams, settingsModel: _settings, meshDataModel: _meshDataModel); // populates data models based on FromRadio packets
 
   final _bleConnectionLogic = BleConnectionLogic(
-      settingsModel: _settings, scanner: _scanner, monitor: _monitor, connector: _connector, interactor: _interactor, bleDataStreams: _bleDataStreams);
+      settingsModel: _settings,
+      scanner: _scanner,
+      monitor: _monitor,
+      connector: _connector,
+      interactor: _interactor,
+      bleDataStreams: _bleDataStreams,
+      radioCommandQueue: _radioCmdQueue);
 
-  await _settings.initializeSettingsFromStorage(); // read initial settings from storage (do this after init of _bleConnectionLogic - to allow it to listen for changes)
+  await _settings
+      .initializeSettingsFromStorage(); // read initial settings from storage (do this after init of _bleConnectionLogic - to allow it to listen for changes)
 
   runApp(MultiProvider(
     providers: [
       ChangeNotifierProvider.value(value: _settings),
       ChangeNotifierProvider.value(value: _meshDataModel),
+      ChangeNotifierProvider.value(value: _radioCmdQueue),
       Provider.value(value: _monitor),
       Provider.value(value: _connector),
       Provider.value(value: _interactor),
@@ -154,7 +161,6 @@ void main() async {
     ],
     child: MeshtasticApp(),
   ));
-
 }
 
 /// The app
