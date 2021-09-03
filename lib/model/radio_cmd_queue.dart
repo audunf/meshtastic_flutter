@@ -66,6 +66,20 @@ class RadioCommand {
     }
   }
 
+  int getFromNodeNum() {
+    if (direction == RadioCommandDirection.fromRadio) {
+      FromRadio p = payload as FromRadio;
+      if (p.whichPayloadVariant() == FromRadio_PayloadVariant.packet) {
+        return p.packet.from;
+      }
+    }
+    return 0;
+  }
+
+  DateTime getDateTime() {
+    return DateTime.fromMillisecondsSinceEpoch(this.timestamp);
+  }
+
   String getBluetoothIdAsString() {
     String id = Utils.convertBluetoothAddressToString(this.bluetoothId);
     print("getBluetoothIdAsString $id");
@@ -101,11 +115,23 @@ class RadioCommand {
   }
 
   static RadioCommand makeFromRadio(int bluetoothId, FromRadio p) {
-    return RadioCommand(RadioCommandDirection.fromRadio, bluetoothId, DateTime.now().toUtc().millisecond, false, p, false, true);
+    int timestampMS = DateTime.now().toUtc().millisecond;
+    if (p.whichPayloadVariant() == FromRadio_PayloadVariant.packet) {
+      if (p.packet.rxTime > 0) {
+        timestampMS = p.packet.rxTime * 1000; // to MS
+      }
+    }
+    return RadioCommand(RadioCommandDirection.fromRadio, bluetoothId, timestampMS, false, p, false, true);
   }
 
   static RadioCommand makeToRadio(int bluetoothId, ToRadio p) {
-    return RadioCommand(RadioCommandDirection.toRadio, bluetoothId, DateTime.now().toUtc().millisecond, false, p, false, true);
+    int timestampMS = DateTime.now().toUtc().millisecond;
+    if (p.whichPayloadVariant() == ToRadio_PayloadVariant.packet) {
+      if (p.packet.rxTime > 0) {
+        timestampMS = p.packet.rxTime * 1000; // to MS
+      }
+    }
+    return RadioCommand(RadioCommandDirection.toRadio, bluetoothId, timestampMS, false, p, false, true);
   }
 
   static RadioCommand fromMap(Map<String, dynamic> m) {
@@ -147,21 +173,6 @@ class RadioCommandQueue extends ChangeNotifier {
     notifyListeners();
     return true;
   }
-
-  /// Add to the front of the queue.
-  /*
-  void _addToRadioFront(ToRadio pkt) {
-    RadioCommand rc = RadioCommand.makeToRadio(_bluetoothId, pkt);
-    if (_hasPacketWithChecksum(rc.checksum)) {
-      print("addToRadioFront - reAddPacket");
-      _reAddPacket(rc);
-      return;
-    }
-    _cmdQueue.addFirst(rc);
-    notifyListeners();
-    save();
-  }
-   */
 
   ///
   void addToRadioBack(ToRadio pkt) {

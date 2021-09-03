@@ -3,6 +3,7 @@ import 'package:meshtastic_flutter/proto-autogen/admin.pb.dart';
 import 'package:meshtastic_flutter/proto-autogen/mesh.pb.dart';
 import 'package:meshtastic_flutter/proto-autogen/portnums.pb.dart';
 import 'package:meshtastic_flutter/proto-autogen/radioconfig.pb.dart';
+import 'package:meshtastic_flutter/mesh_utilities.dart' as MeshUtils;
 
 class MakeToRadio {
   static int currentPacketId = 0;
@@ -19,7 +20,15 @@ class MakeToRadio {
   static ToRadio createTextMessageApp(int fromNodeId, String msgData, [toNodeId = MakeToRadio.NODENUM_BROADCAST]) {
     print("MakeToRadio::textMessageApp TEXT message '$msgData'. Length: ${msgData.length}");
     Data d = new Data(portnum: PortNum.TEXT_MESSAGE_APP, payload: utf8.encode(msgData), wantResponse: false);
-    MeshPacket mp = new MeshPacket(id: ++currentPacketId, from: fromNodeId, to: toNodeId, hopLimit: 3, wantAck: true, priority: MeshPacket_Priority.DEFAULT, decoded: d);
+    MeshPacket mp = new MeshPacket(
+        id: ++currentPacketId,
+        from: fromNodeId,
+        to: toNodeId,
+        hopLimit: 3,
+        rxTime: MeshUtils.getEpochSecondsNow(),
+        wantAck: true,
+        priority: MeshPacket_Priority.DEFAULT,
+        decoded: d);
     ToRadio tr = new ToRadio(packet: mp);
     return tr;
   }
@@ -28,8 +37,8 @@ class MakeToRadio {
   static String getTextMessageUtf8Payload(ToRadio tr) {
     if (tr.whichPayloadVariant() == ToRadio_PayloadVariant.packet &&
         tr.packet.whichPayloadVariant() == MeshPacket_PayloadVariant.decoded &&
-        tr.packet.decoded.portnum == PortNum.TEXT_MESSAGE_APP && tr.packet.decoded.payload.length > 0)
-    {
+        tr.packet.decoded.portnum == PortNum.TEXT_MESSAGE_APP &&
+        tr.packet.decoded.payload.length > 0) {
       return utf8.decode(tr.packet.decoded.payload);
     }
     return "";

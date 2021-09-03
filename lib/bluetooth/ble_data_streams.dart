@@ -80,14 +80,8 @@ class BleDataStreams {
       await _readNotifyWriteSubscription?.cancel();
     }, onDone: () {
       print("_readNotifyWriteSubscription - DONE");
+      _readNotifyWriteSubscription = null;
     }, cancelOnError: true);
-  }
-
-  /// Teardown - whenever disconnected from a device
-  disconnectDataStreams(String deviceId) async {
-    print("connectDataStreams with deviceId = " + deviceId);
-    await _readNotifyWriteSubscription?.cancel();
-    _readNotifyWriteSubscription = null;
   }
 
   /// when device signals data is available (app has explicitly subscribed)

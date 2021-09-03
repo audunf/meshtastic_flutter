@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:timeago/timeago.dart' as timeago;
+
 import 'package:meshtastic_flutter/model/radio_cmd_queue.dart';
 import 'package:meshtastic_flutter/model/mesh_data_model.dart';
 import 'package:meshtastic_flutter/model/tab_definition.dart';
@@ -64,14 +66,23 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget getBubble(RadioCommand r) {
     BubbleStyle s = (r.direction == RadioCommandDirection.fromRadio ? styleSomebody : styleMe);
     String txt = "";
-    if (r.direction == RadioCommandDirection.fromRadio) {
+    CrossAxisAlignment align = CrossAxisAlignment.start;
+    if (r.direction == RadioCommandDirection.fromRadio) { // others
       txt = AppFromRadioHandler.getTextMessageUtf8Payload(r.payload as FromRadio);
-    } else if (r.direction == RadioCommandDirection.toRadio) {
+      align = CrossAxisAlignment.end;
+    } else if (r.direction == RadioCommandDirection.toRadio) { // me
       txt = MakeToRadio.getTextMessageUtf8Payload(r.payload as ToRadio);
+      align = CrossAxisAlignment.start;
     }
+
     return Bubble(
         style: s,
-        child: Text(txt, style: TextStyle(fontSize: 16))
+        child: Column(
+            crossAxisAlignment: align,
+            children: [
+          Text(txt, style: TextStyle(fontSize: 16)),
+          Text(timeago.format(r.getDateTime()),style: TextStyle(color: Colors.white70, fontSize: 10))
+        ])
     );
   }
 
@@ -146,9 +157,11 @@ class _ChatScreenState extends State<ChatScreen> {
                                               textStyle: const TextStyle(fontSize: 20),
                                             ),
                                             onPressed: () {
-                                              print("SEND pressed. Data='${_chatEditCtrl.text.trim()}'");
+                                              var text = _chatEditCtrl.text.trim();
+                                              if (text.length <= 0) return;
+                                              print("SEND pressed. Data='$text'");
                                               radioCommandQueue.addToRadioBack(
-                                                  MakeToRadio.createTextMessageApp(meshDataModel.myNodeInfo.myNodeNum, _chatEditCtrl.text.trim()));
+                                                  MakeToRadio.createTextMessageApp(meshDataModel.myNodeInfo.myNodeNum, text));
                                               _chatEditCtrl.clear();
                                             },
                                             child: const Text('Send'),

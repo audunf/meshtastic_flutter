@@ -6,14 +6,13 @@ MAP popup
 https://medium.com/zipper-studios/flutter-map-custom-and-dynamic-popup-over-the-marker-732d26ef9bc7
 
 # TODO 
+- when selecting device from the config screen, it looks like new devices found aren't added to the list of available devices
+- also looks like we're connecting/disconnecting too much when attempting to select a new device. Not sure why that happens. 
 
 TODO list:
-- Chat screen. 
-  Display sent messages in the "Bubble" list
-  Add date/time and from info in "Bubble" list
-  Receive message
-    Display in Bubble list too. 
+- Chat screen.
   Icon per message showing status - each message might get an icon similar to the one in the main status bar? Needs some research.
+  Add the sender/recipient in the message. 
 - Improve the "People" screen. 
   Needs an icon for status of other nodes. 
   Battery of every node.

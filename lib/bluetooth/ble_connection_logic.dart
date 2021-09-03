@@ -147,9 +147,8 @@ class BleConnectionLogic {
       radioCommandQueue.clearRadioQueue();
 
       List<RadioCommand> dbRadioCmdList = await _loadRadioPacketsFromDatabase(newBluetoothId);
-      radioCommandQueue.markAllStoredAndClean(); // The loaded packets don't need to be stored again - mark them all as Stored and Clean (not Dirty)
-
       print("_settingsBluetoothDeviceId - playback ${dbRadioCmdList.length} packets");
+
       for (var rc in dbRadioCmdList) {
         // Adding raw packets to the sink means they go through the normal reception channel, as if they were received directly from the radio.
         // The idea is to avoid special logic for loading state from the DB ("out of band" so to speak), and just use the same logic for radio and DB
@@ -160,6 +159,7 @@ class BleConnectionLogic {
           radioCommandQueue.addRadioCommandBack(rc); // add to queue, but don't play back through any channels (at least not yet)
         }
       }
+      radioCommandQueue.markAllStoredAndClean(); // The loaded packets don't need to be stored again - mark them all as Stored and Clean (not Dirty)
     }
 
     if (settingsModel.bluetoothEnabled == false) return; // ignore change to device ID if BT is disabled
@@ -231,9 +231,7 @@ class BleConnectionLogic {
       Future.delayed(const Duration(milliseconds: 5000), () async {
         await connector.disconnect(s.deviceId); // disconnect after a delay
       });
-
     } else if (s.connectionState == DeviceConnectionState.disconnected) { /// DISCONNECTED
-      await bleDataStreams.disconnectDataStreams(s.deviceId);
       radioCommandQueue.save(); // save command queues and whatever radio state on disconnect
     }
   }
@@ -257,6 +255,7 @@ class BleConnectionLogic {
         print('_sendToRadioCommandQueue -> DONE');
       }
     }
+    radioCommandQueue.save();
   }
 
 
@@ -303,6 +302,7 @@ class BleConnectionLogic {
     print(" -> query returned: ${rLst.length} rows");
     for (var m in rLst) {
       // packets in ascending order (timestamp), newest to oldest, so add to back of queue
+      print("_loadRadioPacketsFromDatabase $m");
       RadioCommand rc = RadioCommand.fromMap(m);
       rc.stored = true;
       rc.dirty = false;

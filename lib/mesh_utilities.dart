@@ -24,6 +24,9 @@ LatLng convertPositionToLatLng(Position p) {
   return LatLng (p.latitudeI / e7, p.longitudeI / e7);
 }
 
+int getEpochSecondsNow() {
+  return DateTime.now().millisecondsSinceEpoch ~/ 1000;
+}
 
 /// Epoch seconds to DateTime
 DateTime epochSecondsToDateTime(int tsEpochSeconds) {

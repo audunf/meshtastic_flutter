@@ -32,7 +32,7 @@ dependencies:
   uuid: ^3.0.4
   permission_handler: ^8.1.4+2
   protobuf: any
-  provider: ^5.0.0
+  provider: ^6.0.0
   logger: ^1.0.0
   settings_ui: ^1.0.0
   shared_preferences: ^2.0.6
@@ -45,6 +45,7 @@ dependencies:
   bubble: ^1.2.1
   sqflite: ^2.0.0+4
   archive: ^3.1.2
+  timeago: ^3.1.0
 
 dev_dependencies:
   flutter_test:
