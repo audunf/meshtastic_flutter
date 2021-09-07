@@ -61,23 +61,11 @@ class AppFromRadioHandler {
   // MyNodeInfo holds info about the current node connected via BT
   _handleMyNodeInfo(MyNodeInfo mni) {
     print("** myNodeInfo " + mni.toString());
-    meshDataModel.setMyNodeInfo(mni);
-    settingsModel.setMyNodeNum(mni.myNodeNum);
     return mni;
   }
 
   _handleNodeInfo(NodeInfo ni) {
     print("** nodeInfo " + ni.toString());
-    meshDataModel.updateNodeInfo(ni);
-
-    if (ni.num == meshDataModel.myNodeInfo.myNodeNum) {
-      // if this NodeInfo is about our local node
-      settingsModel.setUserLongName(ni.user.longName);
-      settingsModel.setUserShortName(ni.user.shortName);
-    } else {
-      // this NodeInfo is about another node in the mesh
-    }
-
     return ni;
   }
 

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
-import 'package:meshtastic_flutter/model/radio_cmd_queue.dart';
+import 'package:meshtastic_flutter/model/mesh_data_packet_queue.dart';
 import 'package:meshtastic_flutter/model/mesh_data_model.dart';
 import 'package:meshtastic_flutter/model/tab_definition.dart';
 import 'package:meshtastic_flutter/proto-autogen/mesh.pb.dart';
@@ -63,14 +63,14 @@ class _ChatScreenState extends State<ChatScreen> {
 
 
   ///
-  Widget getBubble(RadioCommand r) {
-    BubbleStyle s = (r.direction == RadioCommandDirection.fromRadio ? styleSomebody : styleMe);
+  Widget getBubble(MeshDataPacket r) {
+    BubbleStyle s = (r.direction == MeshDataPacketDirection.fromRadio ? styleSomebody : styleMe);
     String txt = "";
     CrossAxisAlignment align = CrossAxisAlignment.start;
-    if (r.direction == RadioCommandDirection.fromRadio) { // others
+    if (r.direction == MeshDataPacketDirection.fromRadio) { // others
       txt = AppFromRadioHandler.getTextMessageUtf8Payload(r.payload as FromRadio);
       align = CrossAxisAlignment.end;
-    } else if (r.direction == RadioCommandDirection.toRadio) { // me
+    } else if (r.direction == MeshDataPacketDirection.toRadio) { // me
       txt = MakeToRadio.getTextMessageUtf8Payload(r.payload as ToRadio);
       align = CrossAxisAlignment.start;
     }
@@ -88,7 +88,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   Widget build(BuildContext context) =>
-      Consumer<RadioCommandQueue>(builder: (ctx, radioCommandQueue, __) =>
+      Consumer<MeshDataPacketQueue>(builder: (ctx, radioCommandQueue, __) =>
           Scaffold(
               appBar: AppBar(
                 title: Text(tabDefinition.title),
@@ -119,7 +119,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                   decoration: InputDecoration(
                                     border: OutlineInputBorder(),
                                     labelText: 'Enter message',
-                                    labelStyle: TextStyle(fontSize: 18, color: Colors.black87),
+                                    labelStyle: TextStyle(fontSize: 18, color: Colors.grey),
                                     enabledBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(5.0),
                                       borderSide: BorderSide(
@@ -161,7 +161,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                               if (text.length <= 0) return;
                                               print("SEND pressed. Data='$text'");
                                               radioCommandQueue.addToRadioBack(
-                                                  MakeToRadio.createTextMessageApp(meshDataModel.myNodeInfo.myNodeNum, text));
+                                                  MakeToRadio.createTextMessageApp(meshDataModel.myNodeInfo.nodeNum, text));
                                               _chatEditCtrl.clear();
                                             },
                                             child: const Text('Send'),

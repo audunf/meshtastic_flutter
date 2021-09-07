@@ -2,12 +2,15 @@ import 'dart:async';
 import 'dart:collection';
 
 import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
-import 'package:meshtastic_flutter/model/meshtastic_db.dart';
-import 'package:meshtastic_flutter/model/radio_cmd_queue.dart';
+import 'package:meshtastic_flutter/model/mesh_data_model.dart';
+import 'package:meshtastic_flutter/model/mesh_my_node_info.dart';
+import 'package:meshtastic_flutter/model/mesh_data_packet_queue.dart';
+import 'package:meshtastic_flutter/model/mesh_node.dart';
+import 'package:meshtastic_flutter/model/mesh_position.dart';
+import 'package:meshtastic_flutter/model/mesh_user.dart';
 import 'package:meshtastic_flutter/model/settings_model.dart';
 import 'package:meshtastic_flutter/proto-autogen/mesh.pb.dart';
 import 'package:meshtastic_flutter/protocol/make_to_radio.dart';
-import 'package:sqflite/sqflite.dart';
 import 'package:tuple/tuple.dart';
 
 import 'ble_data_streams.dart';
@@ -25,7 +28,8 @@ class BleConnectionLogic {
   BleDeviceInteractor interactor;
   BleDataStreams bleDataStreams;
   SettingsModel settingsModel;
-  RadioCommandQueue radioCommandQueue;
+  MeshDataPacketQueue radioCommandQueue;
+  MeshDataModel meshDataModel;
 
   BleStatus _currentBleStatus = BleStatus.unknown;
   DeviceConnectionState _currentConnectionState = DeviceConnectionState.disconnected;
@@ -40,7 +44,8 @@ class BleConnectionLogic {
       required this.connector,
       required this.interactor,
       required this.bleDataStreams,
-      required this.radioCommandQueue}) {
+      required this.radioCommandQueue,
+      required this.meshDataModel}) {
     settingsModel.changeStream.listen(_settingsModelHandler);
     scanner.state.listen(_btScannerStateHandler);
     monitor.state.listen(_btStatusMonitorHandler);
@@ -48,7 +53,7 @@ class BleConnectionLogic {
     bleDataStreams.fromRadioStream.listen(_fromRadioHandler);
 
     // periodic function which checks the command queue. If there are commands, then scan, which might lead to connect, which sends the packets
-    Timer.periodic(Duration(seconds:5), (Timer t) {
+    Timer.periodic(Duration(seconds: 5), (Timer t) {
       _periodicScan = t;
       if (radioCommandQueue.hasUnAcknowledgedToRadioPackets()) {
         _startScan();
@@ -56,12 +61,10 @@ class BleConnectionLogic {
     });
   }
 
-
   ///
   void dispose() {
     _periodicScan?.cancel();
   }
-
 
   /// scan for the device from settingsModel.bluetoothDeviceId
   _startScan() {
@@ -88,7 +91,6 @@ class BleConnectionLogic {
     scanner.startScan(<Uuid>[Constants.meshtasticServiceId], ScanMode.lowPower);
   }
 
-
   ///
   _stopScan() async {
     if (!scanner.isScanInProgress()) {
@@ -98,7 +100,6 @@ class BleConnectionLogic {
     print("BleConnectionLogic::_stopScan!");
     await scanner.stopScan();
   }
-
 
   /// handle changes to different settings
   _settingsModelHandler(Tuple3<String, dynamic, dynamic> c) {
@@ -117,7 +118,6 @@ class BleConnectionLogic {
     }
   }
 
-
   /// handle enable/disable BT in settings
   _settingsBluetoothEnabled(oldValue, newValue) {
     if (!settingsModel.isBluetoothDeviceIdValidMac()) {
@@ -134,32 +134,18 @@ class BleConnectionLogic {
     }
   }
 
-
   /// if BT enabled, disconnect old device, connect to new device
-  _settingsBluetoothDeviceId(oldValue, newBluetoothId) async {
+  _settingsBluetoothDeviceId(String oldValue, String newBluetoothId) async {
     if (oldValue == newBluetoothId) return; // ignore if old/new device IDs are the same
 
     // On new BT deviceId, dump old data, and read any known data for new ID
     bool btIdChanged = await radioCommandQueue.setBluetoothIdFromString(newBluetoothId);
-    if (btIdChanged) { // ID changed - play back all the old FromRadio packets
+    if (btIdChanged) {
+      // ID changed
       print("_settingsBluetoothDeviceId oldBtId=$oldValue newBluetoothId=$newBluetoothId -> triggering save, purge, load, and playback or radio commands");
-      await radioCommandQueue.save();
-      radioCommandQueue.clearRadioQueue();
-
-      List<RadioCommand> dbRadioCmdList = await _loadRadioPacketsFromDatabase(newBluetoothId);
-      print("_settingsBluetoothDeviceId - playback ${dbRadioCmdList.length} packets");
-
-      for (var rc in dbRadioCmdList) {
-        // Adding raw packets to the sink means they go through the normal reception channel, as if they were received directly from the radio.
-        // The idea is to avoid special logic for loading state from the DB ("out of band" so to speak), and just use the same logic for radio and DB
-        // Whether that's a good idea or not remains to be seen...
-        if (rc.direction == RadioCommandDirection.fromRadio) {
-          bleDataStreams.addRawPacketToFromRadioSink(rc.payload as FromRadio);
-        } else if (rc.direction == RadioCommandDirection.toRadio) {
-          radioCommandQueue.addRadioCommandBack(rc); // add to queue, but don't play back through any channels (at least not yet)
-        }
-      }
-      radioCommandQueue.markAllStoredAndClean(); // The loaded packets don't need to be stored again - mark them all as Stored and Clean (not Dirty)
+      meshDataModel.save();
+      meshDataModel.clearModel();
+      meshDataModel.load(MeshUtils.convertBluetoothAddressToInt(newBluetoothId));
     }
 
     if (settingsModel.bluetoothEnabled == false) return; // ignore change to device ID if BT is disabled
@@ -167,7 +153,6 @@ class BleConnectionLogic {
     if (MeshUtils.isValidBluetoothMac(oldValue) && scanner.isScanInProgress()) await scanner.stopScan();
     if (MeshUtils.isValidBluetoothMac(newBluetoothId)) _startScan();
   }
-
 
   ///
   _btScannerStateHandler(BleScannerState s) async {
@@ -194,7 +179,6 @@ class BleConnectionLogic {
     }
   }
 
-
   /// called whenever BLE status changes
   _btStatusMonitorHandler(BleStatus s) {
     _currentBleStatus = s;
@@ -216,14 +200,14 @@ class BleConnectionLogic {
     }
   }
 
-
   /// called whenever connection state changes
   _btConnectionUpdateHandler(ConnectionStateUpdate s) async {
     _currentConnectionState = s.connectionState;
 
     print("BleConnectionLogic: BleDeviceConnector change $s");
 
-    if (s.connectionState == DeviceConnectionState.connected) { /// CONNECTED
+    if (s.connectionState == DeviceConnectionState.connected) {
+      /// CONNECTED
       await bleDataStreams.connectDataStreams(s.deviceId); // on new connection, initialize data streams
       await _sendWantConfig(s.deviceId);
       await _sendToRadioCommandQueue(); // send all other pending commands
@@ -231,22 +215,22 @@ class BleConnectionLogic {
       Future.delayed(const Duration(milliseconds: 5000), () async {
         await connector.disconnect(s.deviceId); // disconnect after a delay
       });
-    } else if (s.connectionState == DeviceConnectionState.disconnected) { /// DISCONNECTED
+    } else if (s.connectionState == DeviceConnectionState.disconnected) {
+      /// DISCONNECTED
       radioCommandQueue.save(); // save command queues and whatever radio state on disconnect
     }
   }
 
-
   /// When attached to the radio, send all the ToRadio packets
   Future<void> _sendToRadioCommandQueue() async {
-    Queue<RadioCommand> pLst = radioCommandQueue.getToRadioQueue(acknowledged: false); // all packets that haven't been sent yet
+    Queue<MeshDataPacket> pLst = radioCommandQueue.getToRadioQueue(acknowledged: false); // all packets that haven't been sent yet
     print('_sendToRadioCommandQueue length: ${pLst.length}');
     for (var p in pLst) {
       ToRadio tr = p.payload as ToRadio;
       // normally, just write whatever packets
       try {
         await bleDataStreams.writeData(p.getBluetoothIdAsString(), tr);
-      } catch(e) {
+      } catch (e) {
         print("_sendRadioCommandQueue error when sending BT: $e");
       } finally {
         // TODO: do something more sensible about the "ack". Preferably only mark as "acknowledged" once radio actually said so. Is that possible?
@@ -257,7 +241,6 @@ class BleConnectionLogic {
     }
     radioCommandQueue.save();
   }
-
 
   /// ask for config from node.
   _sendWantConfig(String deviceId) async {
@@ -281,33 +264,28 @@ class BleConnectionLogic {
     //await bleDataStreams.writeAndReadResponseUntilEmpty(deviceId, pkt);
   }
 
-
   /// Handle incoming FromRadio packets
   _fromRadioHandler(FromRadio pkt) {
-    radioCommandQueue.addFromRadioBack(pkt);
-  }
-
-
-  ///
-  Future<List<RadioCommand>> _loadRadioPacketsFromDatabase(String bluetoothId) async {
-    print("_loadPacketsFromDatabase");
-    var timeAgo = DateTime.now().subtract(Duration(days: 2));
-    List<RadioCommand> cmdLst = <RadioCommand>[];
-
-    Database db = await MeshtasticDb.database;
-    // Load from DB. Oldest first (Ascending order of epoch_ms)
-    List<Map<String, Object?>> rLst = await db.rawQuery(
-        'SELECT * FROM radio_command WHERE bluetooth_id=? AND epoch_ms > ? ORDER BY epoch_ms ASC;',
-        [MeshUtils.convertBluetoothAddressToInt(bluetoothId), timeAgo.millisecond]);
-    print(" -> query returned: ${rLst.length} rows");
-    for (var m in rLst) {
-      // packets in ascending order (timestamp), newest to oldest, so add to back of queue
-      print("_loadRadioPacketsFromDatabase $m");
-      RadioCommand rc = RadioCommand.fromMap(m);
-      rc.stored = true;
-      rc.dirty = false;
-      cmdLst.add(rc);
+    switch (pkt.whichPayloadVariant()) {
+      case FromRadio_PayloadVariant.packet:
+        radioCommandQueue.addFromRadioBack(pkt);
+        break;
+      case FromRadio_PayloadVariant.nodeInfo:
+        meshDataModel.updateMeshNode(MeshNode.fromProtoBuf(settingsModel.bluetoothDeviceIdInt, pkt.nodeInfo));
+        meshDataModel.updateUser(MeshUser.fromProtoBuf(settingsModel.bluetoothDeviceIdInt, pkt.nodeInfo.user));
+        meshDataModel.updatePosition(MeshPosition.fromProtoBuf(settingsModel.bluetoothDeviceIdInt, pkt.nodeInfo.num, pkt.nodeInfo.position));
+        break;
+      case FromRadio_PayloadVariant.myInfo:
+        meshDataModel.setMyNodeInfo(MeshMyNodeInfo.fromProtoBuf(settingsModel.bluetoothDeviceIdInt, pkt.myInfo));
+        break;
+      case FromRadio_PayloadVariant.logRecord:
+        break;
+      case FromRadio_PayloadVariant.rebooted:
+        break;
+      case FromRadio_PayloadVariant.configCompleteId:
+        break;
+      case FromRadio_PayloadVariant.notSet:
+        break;
     }
-    return cmdLst;
   }
 }

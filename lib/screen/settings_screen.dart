@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:meshtastic_flutter/bluetooth/ble_device_connector.dart';
 import 'package:meshtastic_flutter/constants.dart' as Constants;
+import 'package:meshtastic_flutter/model/mesh_data_model.dart';
+import 'package:meshtastic_flutter/model/mesh_user.dart';
 import 'package:meshtastic_flutter/model/settings_model.dart';
 import 'package:meshtastic_flutter/model/tab_definition.dart';
 import 'package:meshtastic_flutter/widget/bluetooth_connection_icon.dart';
@@ -15,8 +17,8 @@ class SettingsScreen extends StatelessWidget {
   const SettingsScreen({Key? key, required this.tabDefinition}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) => Consumer2<SettingsModel, BleDeviceConnector>(
-      builder: (ctx, settingsModel, bleConnector, __) => Scaffold(
+  Widget build(BuildContext context) => Consumer3<SettingsModel, MeshDataModel, BleDeviceConnector>(
+      builder: (ctx, settingsModel, meshDataModel, bleConnector, __) => Scaffold(
           appBar: AppBar(
             title: Text(tabDefinition.title),
             backgroundColor: tabDefinition.appbarColor,
@@ -55,13 +57,14 @@ class SettingsScreen extends StatelessWidget {
                 SettingsTile(
                   leading: Icon(Icons.person),
                   title: 'User name',
-                  subtitle: settingsModel.userLongName,
+                  subtitle: meshDataModel.getMyUser()?.longName ?? "Unknown",
                   enabled: settingsModel.bluetoothEnabled,
                   onPressed: (BuildContext ctx) {
                     Navigator.pushNamed(context, "/userName");
                   },
                 ),
               ]),
+              /*
               SettingsSection(title: 'Region', tiles: [
                 SettingsTile(
                   leading: Icon(Icons.place),
@@ -72,7 +75,7 @@ class SettingsScreen extends StatelessWidget {
                     Navigator.pushNamed(context, "/selectRegion");
                   },
                 ),
-              ])
+              ])*/
             ],
           )));
 }
@@ -192,14 +195,18 @@ class EditUserNameScreen extends StatelessWidget {
   const EditUserNameScreen({Key? key, required this.tabDefinition}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) => Consumer<SettingsModel>(
-      builder: (ctx, settingsModel, __) => Scaffold(
+  Widget build(BuildContext context) => Consumer<MeshDataModel>(
+      builder: (ctx, meshDataModel, __) => Scaffold(
           body: Center(
               child: TextFormField(
                   autofocus: true,
-                  initialValue: settingsModel.userLongName,
+                  initialValue: meshDataModel.getMyUser()?.longName ?? "Unknown",
                   onFieldSubmitted: (text) {
-                    settingsModel.setUserLongName(text);
+                    MeshUser? u = meshDataModel.getMyUser();
+                    if (u != null) {
+                      u.longName = text;
+                      meshDataModel.updateUser(u);
+                    }
                     Navigator.of(context).pop();
                   }))));
 }
@@ -218,9 +225,9 @@ class SelectRegionScreen extends StatelessWidget {
                 tiles: Constants.regionCodes.entries
                     .map((regionCode) => SettingsTile(
                         title: regionCode.value,
-                        trailing: trailingWidget(regionCode.key, settingsModel.regionCode),
+                        trailing: trailingWidget(regionCode.key, 0), //settingsModel.regionCode),
                         onPressed: (BuildContext context) async {
-                          settingsModel.setRegionCode(regionCode.key);
+                          //settingsModel.setRegionCode(regionCode.key); - no longer exists
                           Navigator.of(context).pop();
                         }))
                     .toList())

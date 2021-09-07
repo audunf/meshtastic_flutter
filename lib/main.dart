@@ -19,7 +19,7 @@ import 'bluetooth/ble_device_interactor.dart';
 import 'bluetooth/ble_scanner.dart';
 import 'bluetooth/ble_status_monitor.dart';
 
-import 'model/radio_cmd_queue.dart';
+import 'model/mesh_data_packet_queue.dart';
 import 'model/settings_model.dart';
 import 'screen/channel_screen.dart';
 import 'screen/chat_screen.dart';
@@ -30,22 +30,22 @@ import 'screen/settings_screen.dart';
 /// Definition of tabs, their main screen, and sub-screens within each tab (and the navigator path of each)
 /// Note that the main tab screen should be the first one, and should have the route '/'
 List<TabDefinition> allTabDefinitions = <TabDefinition>[
-  TabDefinition(0, 'Chat', Icons.chat, Colors.teal, Colors.grey, [
+  TabDefinition(0, 'Chat', Icons.chat, Colors.teal, Colors.black87, [
     Tuple2('/', (tabDef) {
       return ChatScreen(tabDefinition: tabDef);
     }),
   ]),
-  TabDefinition(1, 'People', Icons.people, Colors.cyan, Colors.grey, [
+  TabDefinition(1, 'People', Icons.people, Colors.cyan, Colors.black87, [
     Tuple2('/', (tabDef) {
       return PeopleScreen(tabDefinition: tabDef);
     })
   ]),
-  TabDefinition(2, 'Map', Icons.map, Colors.deepPurple, Colors.grey, [
+  TabDefinition(2, 'Map', Icons.map, Colors.deepPurple, Colors.black87, [
     Tuple2('/', (tabDef) {
       return MapScreen(tabDefinition: tabDef);
     })
   ]),
-  TabDefinition(3, 'Channel', Icons.contactless_outlined, Colors.orange, Colors.grey, [
+  TabDefinition(3, 'Channel', Icons.contactless_outlined, Colors.orange, Colors.black87, [
     Tuple2('/', (tabDef) {
       return ChannelScreen(tabDefinition: tabDef);
     })
@@ -91,7 +91,7 @@ void main() async {
         ),
   );
 
-  final RadioCommandQueue _radioCmdQueue = RadioCommandQueue();
+  final MeshDataPacketQueue _radioCmdQueue = MeshDataPacketQueue();
   final _meshDataModel = MeshDataModel();
   final _ble = FlutterReactiveBle();
   final _scanner = BleScanner(ble: _ble, logMessage: _logger.i);
@@ -122,7 +122,8 @@ void main() async {
       connector: _connector,
       interactor: _interactor,
       bleDataStreams: _bleDataStreams,
-      radioCommandQueue: _radioCmdQueue);
+      radioCommandQueue: _radioCmdQueue,
+      meshDataModel: _meshDataModel);
 
   await _settings
       .initializeSettingsFromStorage(); // read initial settings from storage (do this after init of _bleConnectionLogic - to allow it to listen for changes)

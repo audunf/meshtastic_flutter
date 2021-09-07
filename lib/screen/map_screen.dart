@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:meshtastic_flutter/model/mesh_data_model.dart';
+import 'package:meshtastic_flutter/model/mesh_node.dart';
 import 'package:meshtastic_flutter/model/tab_definition.dart';
 import 'package:meshtastic_flutter/widget/bluetooth_connection_icon.dart';
 import 'package:provider/provider.dart';
@@ -94,7 +95,8 @@ class _MapScreenState extends State<MapScreen> {
   }
 
 
-  Widget buildSpeechBubble(bubbleText) {
+  Widget buildSpeechBubble(String bubbleText) {
+    if (bubbleText.length <= 0) bubbleText = "Unknown";
     return SpeechBubble(
       nipLocation: NipLocation.BOTTOM,
       //color: Colors.redAccent,
@@ -141,13 +143,13 @@ class _MapScreenState extends State<MapScreen> {
                     urlTemplate: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", subdomains: ['a', 'b', 'c'], tileProvider: const CachedTileProvider()),
                 MarkerLayerOptions(
                     markers: meshDataModel
-                        .getNodeInfoIterable()
-                        .map((nodeInfo) => Marker(
+                        .getMeshNodeIterable()
+                        .map((MeshNode mn) => Marker(
                               width: 140, // TODO: how to make width and height dynamic (i.e., based on size of font, length of label)
                               height: 35,
-                              point: MeshUtils.convertPositionToLatLng(nodeInfo.position),
+                              point: meshDataModel.getPosition(mn.nodeNum)?.getLatLng() ?? LatLng(0,0), // TODO: fix this - perhaps only iterate over nodes for which there exists a position
                               //builder: (ctx) => Icon(Icons.location_on, color: Colors.red, size: 30),
-                              builder: (ctx) => buildSpeechBubble(nodeInfo.user.longName),
+                              builder: (ctx) => buildSpeechBubble(meshDataModel.getUser(mn.userId)?.longName ?? "Unknown"),
                               anchorPos: AnchorPos.align(AnchorAlign.top),
                             ))
                         .toList())

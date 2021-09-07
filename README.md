@@ -6,8 +6,17 @@ MAP popup
 https://medium.com/zipper-studios/flutter-map-custom-and-dynamic-popup-over-the-marker-732d26ef9bc7
 
 # TODO 
+Saving text message fails. Wrong SQL.
+
 - when selecting device from the config screen, it looks like new devices found aren't added to the list of available devices
 - also looks like we're connecting/disconnecting too much when attempting to select a new device. Not sure why that happens. 
+
+Main big thing: 
+* Concluded that new data model is required. Storing all packets, regardless of payload type, into one table is just too confusing
+* Make storable data objects for all the new types
+* Make data model which is aware of the lists of Users, Nodes and Positions
+* Existing radio_cmd_queue -> MeshPacket
+
 
 TODO list:
 - Chat screen.

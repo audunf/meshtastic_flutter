@@ -15,10 +15,6 @@ class SettingsModel extends ChangeNotifier {
   bool _bluetoothEnabled = false;
   String _bluetoothDeviceId = "Unknown";
   String _bluetoothDeviceName = "Unknown";
-  String _userLongName = "Unknown";
-  String _userShortName = "Unknown";
-  int _myNodeNum = 0;
-  int _regionCode = 0;
 
   // notify of individual changes - attribute name, old value, new value
   var changeStreamController = StreamController<Tuple3<String, dynamic, dynamic>>.broadcast();
@@ -30,10 +26,6 @@ class SettingsModel extends ChangeNotifier {
     setBluetoothEnabled(prefs.getBool('bluetoothEnabled') ?? _bluetoothEnabled);
     setBluetoothDeviceId(prefs.getString('bluetoothDeviceId') ?? _bluetoothDeviceId);
     setBluetoothDeviceName(prefs.getString('bluetoothDeviceName') ?? _bluetoothDeviceName);
-    setUserLongName(prefs.getString('userLongName') ?? _userLongName);
-    setUserShortName(prefs.getString('userShortName') ?? _userShortName);
-    setMyNodeNum(prefs.getInt('myNodeNum') ?? _myNodeNum);
-    setRegionCode(prefs.getInt('regionCode') ?? _regionCode);
   }
 
   /// handle two competing/complementary ways to distribute state changes, and persist settings
@@ -61,28 +53,12 @@ class SettingsModel extends ChangeNotifier {
     return _bluetoothDeviceId;
   }
 
+  int get bluetoothDeviceIdInt {
+    return MeshUtils.convertBluetoothAddressToInt(_bluetoothDeviceId);
+  }
+
   String get bluetoothDeviceName {
     return _bluetoothDeviceName;
-  }
-
-  String get userLongName {
-    return _userLongName;
-  }
-
-  String get userShortName {
-    return _userShortName;
-  }
-
-  int get regionCode {
-    return _regionCode;
-  }
-
-  int get myNodeNum {
-    return _myNodeNum;
-  }
-
-  String get regionName {
-    return Constants.regionCodes[this.regionCode] ?? 'Unknown';
   }
 
   setBluetoothEnabled(bool newValue) {
@@ -103,38 +79,13 @@ class SettingsModel extends ChangeNotifier {
     publishChange('bluetoothDeviceName', oldValue, _bluetoothDeviceName);
   }
 
-  setUserLongName(String s) async {
-    var oldValue = _userLongName;
-    _userLongName = s;
-    publishChange('userLongName', oldValue, _userLongName);
-  }
-
-  setUserShortName(String s) async {
-    var oldValue = _userShortName;
-    _userShortName = s;
-    publishChange('userShortName', oldValue, _userShortName);
-  }
-
-  setRegionCode(int c) async {
-    if (c >= Constants.regionCodes.keys.first && c <= Constants.regionCodes.keys.last) {
-      var oldValue = _regionCode;
-      _regionCode = c;
-      publishChange('regionCode', oldValue, _regionCode);
-    }
-  }
-
-  setMyNodeNum(int num) async {
-    var oldValue = _myNodeNum;
-    _myNodeNum = num;
-    publishChange('myNodeNum', oldValue, _myNodeNum);
+  /// true if current BT ID is a valid MAC address
+  bool isBluetoothDeviceIdValidMac() {
+    return MeshUtils.isValidBluetoothMac(bluetoothDeviceId);
   }
 
   void dispose() async {
     changeStreamController.close();
     super.dispose();
-  }
-
-  bool isBluetoothDeviceIdValidMac() {
-    return MeshUtils.isValidBluetoothMac(bluetoothDeviceId);
   }
 }
