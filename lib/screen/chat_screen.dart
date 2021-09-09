@@ -119,7 +119,8 @@ class _ChatScreenState extends State<ChatScreen> {
                                   decoration: InputDecoration(
                                     border: OutlineInputBorder(),
                                     labelText: 'Enter message',
-                                    labelStyle: TextStyle(fontSize: 18, color: Colors.grey),
+                                    labelStyle: TextStyle(fontSize: 18, color: Colors.grey
+                                    ),
                                     enabledBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(5.0),
                                       borderSide: BorderSide(

@@ -45,58 +45,92 @@ extension RadioCommandDirectionInteger on MeshDataPacketDirection {
 ///
 ///
 class MeshDataPacket {
+  // meta-info about the package
   MeshDataPacketDirection direction = MeshDataPacketDirection.toRadio;
   int bluetoothId = 0;
-  int timestamp = 0;
+  bool acknowledged = false; // marks whether an outgoing package has been acknowledged
   GeneratedMessage payload; // Both ToRadio and FromRadio inherit from GeneratedMessage
-  int checksum = 0;
-  int payloadVariant =
-      FromRadio_PayloadVariant.notSet.index; // TODO: could be dangerous if protobuf definition changes? Add own function to return int based on type?
-  bool acknowledged = true; // For ToRadio -> has the radio acknowledged reception?
+
+  // not stored in DB. Used to keep track of when to save.
   bool stored = false; // has object been stored in the database before?
   bool dirty = false; // has object changed since it was stored?
 
-  MeshDataPacket(this.direction, this.bluetoothId, this.timestamp, this.acknowledged, this.payload, this.stored, this.dirty) {
-    this.checksum = Utils.makePackageChecksum(payload);
-    if (direction == MeshDataPacketDirection.fromRadio) {
+  // lifted "up" from the payload (MeshPacket)
+  int payloadVariant = FromRadio_PayloadVariant.notSet.index; // TODO: dangerous if protobuf definition changes? Add own function to return int based on type?
+  int packetId = 0;
+  int fromNodeNum = 0;
+  int toNodeNum = 0;
+  int channel = 0;
+  int rxTimeEpochSec = 0;
+  double rxSnr = 0;
+  int hopLimit = 0;
+  bool wantAck = false;
+  int priority = 0;
+  int rxRssi = 0;
+
+  MeshDataPacket(this.bluetoothId, this.payload, this.acknowledged, this.stored, this.dirty) {
+    dynamic radioPacket;
+    if (payload.runtimeType == FromRadio().runtimeType) {
       payloadVariant = Utils.fromRadioPayloadVariantToInteger(payload as FromRadio);
-    } else if (direction == MeshDataPacketDirection.toRadio) {
+      radioPacket = getPayloadAsFromRadio();
+    } else if (payload.runtimeType == ToRadio().runtimeType) {
       payloadVariant = Utils.toRadioPayloadVariantToInteger(payload as ToRadio);
+      radioPacket = getPayloadAsToRadio();
     }
-  }
 
-  int getFromNodeNum() {
-    if (direction == MeshDataPacketDirection.fromRadio) {
-      FromRadio p = payload as FromRadio;
-      if (p.whichPayloadVariant() == FromRadio_PayloadVariant.packet) {
-        return p.packet.from;
-      }
-    }
-    return 0;
-  }
-
-  DateTime getDateTime() {
-    return DateTime.fromMillisecondsSinceEpoch(this.timestamp);
-  }
-
-  String getBluetoothIdAsString() {
-    String id = Utils.convertBluetoothAddressToString(this.bluetoothId);
-    print("getBluetoothIdAsString $id");
-    return id;
+    packetId = radioPacket?.packet?.id ?? 0;
+    fromNodeNum = radioPacket?.packet?.from ?? 0;
+    toNodeNum = radioPacket?.packet?.to ?? 0;
+    rxTimeEpochSec = radioPacket?.packet?.rxTime ?? 0;
+    rxSnr = radioPacket?.packet?.rxSnr ?? 0.0;
+    hopLimit = radioPacket?.packet?.hopLimit ?? 0;
+    wantAck = radioPacket?.packet?.wantAck ?? false;
+    priority = radioPacket?.packet?.priority?.value ?? MeshPacket_Priority.DEFAULT.value;
+    rxRssi = radioPacket?.packet?.rxRssi ?? 0;
   }
 
   Map<String, dynamic> toMap() {
     return {
-      'direction': direction.toInt(),
       'bluetooth_id': bluetoothId,
-      'epoch_ms': timestamp,
-      'checksum': checksum,
-      'acknowledged': (acknowledged ? 1 : 0),
+      'direction': direction.toInt(),
       'payload_variant': payloadVariant,
-      'stored': (stored ? 1 : 0),
-      'dirty': (dirty ? 1 : 0),
-      'payload': payload.writeToBuffer()
+      'packet_id': packetId,
+      'from_node_num': fromNodeNum,
+      'to_node_num': toNodeNum,
+      'channel': channel,
+      'rx_time_epoch_sec': rxTimeEpochSec,
+      'rx_snr': rxSnr,
+      'hop_limit': hopLimit,
+      'want_ack': (wantAck ? 1 : 0),
+      'priority': priority,
+      'rx_rssi': rxRssi,
+      'acknowledged': (acknowledged ? 1 : 0),
+      'payload': payload.writeToBuffer(),
+      //'stored': (stored ? 1 : 0),
+      //'dirty': (dirty ? 1 : 0),
     };
+  }
+
+  static MeshDataPacket fromMap(Map<String, dynamic> m) {
+    dynamic pl;
+    MeshDataPacketDirection rd = RadioCommandDirectionInteger.fromInt(m['direction']);
+    if (rd == MeshDataPacketDirection.toRadio) {
+      pl = ToRadio.fromBuffer(m['payload']);
+    } else if (rd == MeshDataPacketDirection.fromRadio) {
+      pl = FromRadio.fromBuffer(m['payload']);
+    } else {
+      throw new ErrorDescription("payload from DB doesn't match ToRadio or FromRadio");
+    }
+    return MeshDataPacket(m['bluetooth_id'], m['payload'], (m['acknowledged'] == 0 ? false : true), (m['stored'] == 0 ? false : true), (m['dirty'] == 0 ? false : true));
+  }
+
+  DateTime getDateTime() {
+    return DateTime.fromMillisecondsSinceEpoch(this.rxTimeEpochSec * 1000);
+  }
+
+  String getBluetoothIdAsString() {
+    String id = Utils.convertBluetoothAddressToString(this.bluetoothId);
+    return id;
   }
 
   FromRadio? getPayloadAsFromRadio() {
@@ -111,40 +145,6 @@ class MeshDataPacket {
       return payload as ToRadio;
     else
       return null;
-  }
-
-  static MeshDataPacket makeFromRadio(int bluetoothId, FromRadio p) {
-    int timestampMS = DateTime.now().toUtc().millisecond;
-    if (p.whichPayloadVariant() == FromRadio_PayloadVariant.packet) {
-      if (p.packet.rxTime > 0) {
-        timestampMS = p.packet.rxTime * 1000; // to MS
-      }
-    }
-    return MeshDataPacket(MeshDataPacketDirection.fromRadio, bluetoothId, timestampMS, false, p, false, true);
-  }
-
-  static MeshDataPacket makeToRadio(int bluetoothId, ToRadio p) {
-    int timestampMS = DateTime.now().toUtc().millisecond;
-    if (p.whichPayloadVariant() == ToRadio_PayloadVariant.packet) {
-      if (p.packet.rxTime > 0) {
-        timestampMS = p.packet.rxTime * 1000; // to MS
-      }
-    }
-    return MeshDataPacket(MeshDataPacketDirection.toRadio, bluetoothId, timestampMS, false, p, false, true);
-  }
-
-  static MeshDataPacket fromMap(Map<String, dynamic> m) {
-    GeneratedMessage payload;
-    MeshDataPacketDirection rd = RadioCommandDirectionInteger.fromInt(m['direction']);
-    if (rd == MeshDataPacketDirection.toRadio) {
-      payload = ToRadio.fromBuffer(m['payload']);
-    } else if (rd == MeshDataPacketDirection.fromRadio) {
-      payload = FromRadio.fromBuffer(m['payload']);
-    } else {
-      throw new ErrorDescription("payload from DB doesn't match ToRadio or FromRadio");
-    }
-    return MeshDataPacket(RadioCommandDirectionInteger.fromInt(m['direction']), m['bluetooth_id'], m['epoch_ms'], (m['acknowledged'] == 0 ? false : true),
-        payload, (m['stored'] == 0 ? false : true), (m['dirty'] == 0 ? false : true));
   }
 }
 
@@ -179,27 +179,21 @@ class MeshDataPacketQueue extends ChangeNotifier {
   ///
   void addToRadioBack(ToRadio pkt) {
     if (pkt.whichPayloadVariant() != ToRadio_PayloadVariant.packet) return; // only add data packets
-    MeshDataPacket rc = MeshDataPacket.makeToRadio(_bluetoothId, pkt);
+    MeshDataPacket rc = MeshDataPacket(_bluetoothId, pkt, false, false, true);
     _addRadioCommandBack(rc);
   }
 
   ///
   void addFromRadioBack(FromRadio pkt) {
     if (pkt.whichPayloadVariant() != FromRadio_PayloadVariant.packet) return; // only add data packets
-    MeshDataPacket rc = MeshDataPacket.makeFromRadio(_bluetoothId, pkt);
+    MeshDataPacket rc = MeshDataPacket(_bluetoothId, pkt, false, false, true);
     _addRadioCommandBack(rc);
   }
 
   ///
   void _addRadioCommandBack(MeshDataPacket rc) {
-    if (_hasPacketWithChecksum(rc.checksum)) {
-      print("addRadioCommandBack - reAddPacket");
-      _reAddPacket(rc);
-      return;
-    }
     _cmdQueue.addLast(rc);
     notifyListeners();
-    save();
   }
 
   ///
@@ -248,28 +242,9 @@ class MeshDataPacketQueue extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// True if packet with checksum is present in queue
-  bool _hasPacketWithChecksum(int checksum) {
-    return _cmdQueue.any((MeshDataPacket e) => e.checksum == checksum);
-  }
-
   /// Has un-acknowledged (unsent) packets
   bool hasUnAcknowledgedToRadioPackets() {
     return _cmdQueue.any((MeshDataPacket e) => e.direction == MeshDataPacketDirection.toRadio && e.acknowledged == false);
-  }
-
-  /// When same packet is seen 'again' (same checksum), remove old, add new to get the timestamps right
-  void _reAddPacket(MeshDataPacket rc) {
-    _cmdQueue.removeWhere((MeshDataPacket e) => e.checksum == rc.checksum && e.bluetoothId == rc.bluetoothId && e.direction == rc.direction);
-    rc.dirty = true;
-    rc.stored = false;
-    // clean up the database - easier to delete the old packet than try to update it
-    MeshtasticDb.database.then((db) {
-      return db.delete('radio_command', where: 'direction=? AND bluetooth_id=? AND checksum=?', whereArgs: [rc.direction.index, rc.bluetoothId, rc.checksum]);
-    });
-    _cmdQueue.addLast(rc);
-    notifyListeners();
-    save();
   }
 
   /// mark all packets in the queue as Clean and *not* Dirty
@@ -297,16 +272,15 @@ class MeshDataPacketQueue extends ChangeNotifier {
             i.stored = true;
             i.dirty = false;
             var m = i.toMap();
-            // TODO FAILS HERE!!!
-            batch.update('radio_command', m,
-                where: 'direction=? AND bluetooth_id=? AND epoch_ms=? AND payload_variant=?',
-                whereArgs: [m['direction'], m['bluetooth_id'], m['epoch_ms'], m['payload_variant']]);
+            batch.update('mesh_data_packet', m,
+                where: 'bluetooth_id=? AND rx_time_epoch_sec=? AND packet_id=? AND from_node_num=? AND to_node_num=? AND channel=?',
+                whereArgs: [m['bluetooth_id'], m['rx_time_epoch_sec'], m['packet_id'], m['from_node_num'], m['to_node_num'], m['channel']]);
             ++countUpdate;
           } else if (i.stored == false) {
             i.stored = true;
             i.dirty = false;
             var m = i.toMap();
-            batch.insert('radio_command', m);
+            batch.insert('mesh_data_packet', m);
             ++countInsert;
           }
         }
@@ -327,7 +301,7 @@ class MeshDataPacketQueue extends ChangeNotifier {
     Database db = await MeshtasticDb.database;
     // Load from DB. Oldest first (Ascending order of epoch_ms)
     List<Map<String, Object?>> rLst = await db.rawQuery(
-        'SELECT * FROM radio_command WHERE bluetooth_id=? AND rx_time_epoch_sec > ? ORDER BY rx_time_epoch_sec ASC;', [_bluetoothId, timeAgo.second]);
+        'SELECT * FROM mesh_data_packet WHERE bluetooth_id=? AND rx_time_epoch_sec > ? ORDER BY rx_time_epoch_sec ASC;', [_bluetoothId, timeAgo.second]);
     print(" -> query returned: ${rLst.length} rows");
     for (var m in rLst) {
       // packets in ascending order (timestamp), newest to oldest, so add to back of queue

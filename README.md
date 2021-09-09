@@ -6,7 +6,10 @@ MAP popup
 https://medium.com/zipper-studios/flutter-map-custom-and-dynamic-popup-over-the-marker-732d26ef9bc7
 
 # TODO 
-Saving text message fails. Wrong SQL.
+MeshDataPacket(this.bluetoothId, this.payload, this.acknowledged, this.stored, this.dirty) {
+if (payload.runtimeType == FromRadio().runtimeType) {
+I think the type detection fails here. 
+
 
 - when selecting device from the config screen, it looks like new devices found aren't added to the list of available devices
 - also looks like we're connecting/disconnecting too much when attempting to select a new device. Not sure why that happens. 

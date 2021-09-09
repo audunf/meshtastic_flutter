@@ -35,7 +35,7 @@ class MeshtasticDb {
 
           // MeshPacket
           await db.execute('''           
-            CREATE TABLE IF NOT EXISTS radio_command (
+            CREATE TABLE IF NOT EXISTS mesh_data_packet (
               bluetooth_id       INTEGER NOT NULL,
               direction          INTEGER NOT NULL,
               payload_variant    INTEGER NOT NULL,
@@ -56,7 +56,7 @@ class MeshtasticDb {
             ); ''');
 
           await db.execute('''
-            CREATE INDEX IF NOT EXISTS radio_cmd_index ON radio_command(bluetooth_id, direction);           
+            CREATE INDEX IF NOT EXISTS mesh_data_packet_dir_idx ON mesh_data_packet(bluetooth_id, direction);           
             ''');
 
           // NodeInfo.
