@@ -1,18 +1,23 @@
 # meshtastic_flutter
+Should it be names "Mutter"? Meshtastic Flutter. "Mutter" being "to talk in a quiet voice that 
+is difficult to hear, especially because you are annoyed or embarrassed, or are talking to yourself".
+
 Routes and keeping the app bar/bottom nav bar:
 https://stackoverflow.com/questions/66755344/flutter-navigation-push-while-keeping-the-same-appbar
 
 MAP popup
 https://medium.com/zipper-studios/flutter-map-custom-and-dynamic-popup-over-the-marker-732d26ef9bc7
 
+# Data model
+There are different data models. 
+1. MeshDataModel - related to connection to a radio. The radio itself, other nodes, other users, positions. Things we get after sending 'want_config' to a node. It's all tied to a bluetooth ID. 
+2. MeshDataPacketQueue - any MeshPacket (see protobuf definition) sent/received. These include encrypted messages and plain text messages. Tied to BT ID - reloaded on change. 
+3. SettingsModel - settings for the app itself. 
+
 # TODO 
-MeshDataPacket(this.bluetoothId, this.payload, this.acknowledged, this.stored, this.dirty) {
-if (payload.runtimeType == FromRadio().runtimeType) {
-I think the type detection fails here. 
-
-
+- also looks like we're connecting/disconnecting too much when attempting to select a new device. Not sure why that happens.
 - when selecting device from the config screen, it looks like new devices found aren't added to the list of available devices
-- also looks like we're connecting/disconnecting too much when attempting to select a new device. Not sure why that happens. 
+- how do we get an ACK from the radio when a packet has been sent? 
 
 Main big thing: 
 * Concluded that new data model is required. Storing all packets, regardless of payload type, into one table is just too confusing

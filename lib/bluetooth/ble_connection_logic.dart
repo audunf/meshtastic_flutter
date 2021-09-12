@@ -28,7 +28,7 @@ class BleConnectionLogic {
   BleDeviceInteractor interactor;
   BleDataStreams bleDataStreams;
   SettingsModel settingsModel;
-  MeshDataPacketQueue radioCommandQueue;
+  MeshDataPacketQueue dataPacketQueue;
   MeshDataModel meshDataModel;
 
   BleStatus _currentBleStatus = BleStatus.unknown;
@@ -44,7 +44,7 @@ class BleConnectionLogic {
       required this.connector,
       required this.interactor,
       required this.bleDataStreams,
-      required this.radioCommandQueue,
+      required this.dataPacketQueue,
       required this.meshDataModel}) {
     settingsModel.changeStream.listen(_settingsModelHandler);
     scanner.state.listen(_btScannerStateHandler);
@@ -55,7 +55,7 @@ class BleConnectionLogic {
     // periodic function which checks the command queue. If there are commands, then scan, which might lead to connect, which sends the packets
     Timer.periodic(Duration(seconds: 5), (Timer t) {
       _periodicScan = t;
-      if (radioCommandQueue.hasUnAcknowledgedToRadioPackets()) {
+      if (dataPacketQueue.hasUnAcknowledgedToRadioPackets()) {
         _startScan();
       }
     });
@@ -139,13 +139,12 @@ class BleConnectionLogic {
     if (oldValue == newBluetoothId) return; // ignore if old/new device IDs are the same
 
     // On new BT deviceId, dump old data, and read any known data for new ID
-    bool btIdChanged = await radioCommandQueue.setBluetoothIdFromString(newBluetoothId);
-    if (btIdChanged) {
-      // ID changed
+    bool btIdChanged = await dataPacketQueue.setBluetoothIdFromString(newBluetoothId);
+    if (btIdChanged) {       // ID changed
       print("_settingsBluetoothDeviceId oldBtId=$oldValue newBluetoothId=$newBluetoothId -> triggering save, purge, load, and playback or radio commands");
-      meshDataModel.save();
+      await meshDataModel.save();
       meshDataModel.clearModel();
-      meshDataModel.load(MeshUtils.convertBluetoothAddressToInt(newBluetoothId));
+      await meshDataModel.load(MeshUtils.convertBluetoothAddressToInt(newBluetoothId));
     }
 
     if (settingsModel.bluetoothEnabled == false) return; // ignore change to device ID if BT is disabled
@@ -217,13 +216,13 @@ class BleConnectionLogic {
       });
     } else if (s.connectionState == DeviceConnectionState.disconnected) {
       /// DISCONNECTED
-      radioCommandQueue.save(); // save command queues and whatever radio state on disconnect
+      dataPacketQueue.save(); // save command queues and whatever radio state on disconnect
     }
   }
 
   /// When attached to the radio, send all the ToRadio packets
   Future<void> _sendToRadioCommandQueue() async {
-    Queue<MeshDataPacket> pLst = radioCommandQueue.getToRadioQueue(acknowledged: false); // all packets that haven't been sent yet
+    Queue<MeshDataPacket> pLst = dataPacketQueue.getToRadioQueue(acknowledged: false); // all packets that haven't been sent yet
     print('_sendToRadioCommandQueue length: ${pLst.length}');
     for (var p in pLst) {
       ToRadio tr = p.payload as ToRadio;
@@ -239,7 +238,7 @@ class BleConnectionLogic {
         print('_sendToRadioCommandQueue -> DONE');
       }
     }
-    radioCommandQueue.save();
+    dataPacketQueue.save();
   }
 
   /// ask for config from node.
@@ -268,7 +267,7 @@ class BleConnectionLogic {
   _fromRadioHandler(FromRadio pkt) {
     switch (pkt.whichPayloadVariant()) {
       case FromRadio_PayloadVariant.packet:
-        radioCommandQueue.addFromRadioBack(pkt);
+        dataPacketQueue.addFromRadioBack(pkt);
         break;
       case FromRadio_PayloadVariant.nodeInfo:
         meshDataModel.updateMeshNode(MeshNode.fromProtoBuf(settingsModel.bluetoothDeviceIdInt, pkt.nodeInfo));

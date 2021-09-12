@@ -101,12 +101,9 @@ void main() async {
     logMessage: _logger.i,
   );
   final _interactor = BleDeviceInteractor(
-    bleDiscoverServices: _ble.discoverServices,
-    readCharacteristic: _ble.readCharacteristic,
-    writeWithResponse: _ble.writeCharacteristicWithResponse,
-    writeWithOutResponse: _ble.writeCharacteristicWithoutResponse,
-    subscribeToCharacteristic: _ble.subscribeToCharacteristic,
-    logMessage: _logger.i,
+    ble: _ble,
+    connector: _connector,
+    logMessage: _logger.i
   );
   final _settings = SettingsModel();
 
@@ -122,7 +119,7 @@ void main() async {
       connector: _connector,
       interactor: _interactor,
       bleDataStreams: _bleDataStreams,
-      radioCommandQueue: _radioCmdQueue,
+      dataPacketQueue: _radioCmdQueue,
       meshDataModel: _meshDataModel);
 
   await _settings
@@ -170,7 +167,7 @@ class MeshtasticApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Meshtastic',
+      title: 'Mutter',
       color: Colors.blue,
       theme: ThemeData(
         textTheme:

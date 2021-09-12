@@ -9,12 +9,12 @@ import 'package:path_provider/path_provider.dart';
 ///
 ///
 ///
-class MeshtasticDb {
+class MeshDatabase {
   // names used for database
   static final _initDB = AsyncMemoizer<Database>();
   static final String mainDatabaseName = 'meshtastic_flutter.db';
 
-  MeshtasticDb();
+  MeshDatabase();
 
   ///
   static Future<Database> get database => _initDB.runOnce(() async => await _openDB());
@@ -39,6 +39,7 @@ class MeshtasticDb {
               bluetooth_id       INTEGER NOT NULL,
               direction          INTEGER NOT NULL,
               payload_variant    INTEGER NOT NULL,
+              checksum           INTEGER NOT NULL,
                                           
               packet_id          INTEGER NOT NULL,
               from_node_num      INTEGER NOT NULL,
@@ -52,7 +53,7 @@ class MeshtasticDb {
               rx_rssi            INTEGER DEFAULT 0 NOT NULL,
               acknowledged       INTEGER DEFAULT 0 NOT NULL,
               payload            BLOB DEFAULT NULL,
-              PRIMARY KEY (bluetooth_id, rx_time_epoch_sec, packet_id, from_node_num, to_node_num, channel)
+              PRIMARY KEY (bluetooth_id, rx_time_epoch_sec, packet_id, from_node_num, to_node_num, channel, checksum)
             ); ''');
 
           await db.execute('''

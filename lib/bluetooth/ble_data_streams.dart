@@ -67,7 +67,7 @@ class BleDataStreams {
       await _readNotifyWriteSubscription?.cancel();
       print("connectDataStreams - setup new subscriptions and listen");
       _readNotifyWriteStream =
-          _deviceInteractor.subscribeToCharacteristic(getCharacteristic(deviceId, Constants.readNotifyWriteCharacteristicId)).asBroadcastStream();
+          _deviceInteractor.subscribeToCharacteristic(getCharacteristic(deviceId, Constants.readNotifyWriteCharacteristicId))?.asBroadcastStream();
     } catch (e, s) {
       print("Ignoring exception while cancelling _readNotifyWriteSubscription or calling subscribeToCharacteristic: $e");
     }

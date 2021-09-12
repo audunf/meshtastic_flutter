@@ -6,9 +6,9 @@ import 'package:sqflite/sqflite.dart';
 import 'mesh_my_node_info.dart';
 import 'mesh_node.dart';
 import 'mesh_user.dart';
-import 'meshtastic_db.dart';
+import 'mesh_database.dart';
 
-
+/// Contains information about currently connected node, other nodes, other positions, other users
 class MeshDataModel extends ChangeNotifier {
   MeshMyNodeInfo _myNodeInfo = MeshMyNodeInfo(0, 0, false, 0, 0, "NA", 0, 0, 0, 0, 0);
   final Map<String, MeshUser> _users = new Map(); // User.id is key
@@ -16,7 +16,7 @@ class MeshDataModel extends ChangeNotifier {
   final Map<int, MeshPosition> _positions = new Map(); // Node.id is key (nodeNum)
 
   /// Clear all data
-  clearModel() {
+  void clearModel() {
     _myNodeInfo = MeshMyNodeInfo(0, 0, false, 0, 0, "NA", 0, 0, 0, 0, 0);
     _users.clear();
     _nodes.clear();
@@ -30,7 +30,7 @@ class MeshDataModel extends ChangeNotifier {
   }
 
   ///
-  updatePosition(MeshPosition p) {
+  void updatePosition(MeshPosition p) {
     _positions[p.nodeNum] = p;
     notifyListeners();
   }
@@ -42,7 +42,7 @@ class MeshDataModel extends ChangeNotifier {
   }
 
   ///
-  updateUser(MeshUser u) {
+  void updateUser(MeshUser u) {
     _users[u.userId] = u;
     notifyListeners();
   }
@@ -54,7 +54,7 @@ class MeshDataModel extends ChangeNotifier {
   }
 
   ///
-  updateMeshNode(MeshNode n) {
+  void updateMeshNode(MeshNode n) {
     _nodes[n.nodeNum] = n;
     notifyListeners();
   }
@@ -87,15 +87,15 @@ class MeshDataModel extends ChangeNotifier {
   }
 
   ///
-  setMyNodeInfo(MeshMyNodeInfo n) {
+  void setMyNodeInfo(MeshMyNodeInfo n) {
     _myNodeInfo = n;
     notifyListeners();
   }
 
   ///
-  load(int newBluetoothId) async {
+  Future<void> load(int newBluetoothId) async {
     print("MeshDataModel::load");
-    Database db = await MeshtasticDb.database;
+    Database db = await MeshDatabase.database;
     List<Map<String, Object?>> rLst = await db.rawQuery('SELECT * FROM my_node_info WHERE bluetooth_id=?;', [newBluetoothId]);
     for (var m in rLst) {
       _myNodeInfo = MeshMyNodeInfo.fromMap(m);
@@ -123,8 +123,8 @@ class MeshDataModel extends ChangeNotifier {
   }
 
   ///
-  save() async {
-    return MeshtasticDb.database.then((db) {
+  Future<List<Object?>> save() async {
+    return MeshDatabase.database.then((db) {
       return db.transaction((txn) async {
         var batch = txn.batch();
         batch.delete('user', where: 'bluetooth_id = ?', whereArgs: [_myNodeInfo.bluetoothId]);
@@ -133,8 +133,9 @@ class MeshDataModel extends ChangeNotifier {
         batch.delete('my_node_info', where: 'bluetooth_id = ?', whereArgs: [_myNodeInfo.bluetoothId]);
 
         batch.insert('my_node_info', _myNodeInfo.toMap());
+
         _nodes.forEach((id, e) {
-          batch.insert('node', e.toMap());
+          batch.insert('node_info', e.toMap());
         });
         _users.forEach((id, e) {
           batch.insert('user', e.toMap());
