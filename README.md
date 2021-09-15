@@ -15,15 +15,11 @@ There are different data models.
 3. SettingsModel - settings for the app itself. 
 
 # TODO 
-- also looks like we're connecting/disconnecting too much when attempting to select a new device. Not sure why that happens.
 - when selecting device from the config screen, it looks like new devices found aren't added to the list of available devices
+  The stream is now OK. But code is very eager to connect. And that likely blocks or cancels scanning while in the list/scan for devices screen. 
+  Need to somehow disable connections while in the selection screen. And ensure that nobody tries to connect while scanning. 
+- also looks like we're connecting/disconnecting too much when attempting to select a new device. Not sure why that happens.
 - how do we get an ACK from the radio when a packet has been sent? 
-
-Main big thing: 
-* Concluded that new data model is required. Storing all packets, regardless of payload type, into one table is just too confusing
-* Make storable data objects for all the new types
-* Make data model which is aware of the lists of Users, Nodes and Positions
-* Existing radio_cmd_queue -> MeshPacket
 
 
 TODO list:

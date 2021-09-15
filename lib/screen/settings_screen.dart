@@ -37,7 +37,8 @@ class SettingsScreen extends StatelessWidget {
                     switchValue: settingsModel.bluetoothEnabled,
                     onToggle: (bool newValue) async {
                       settingsModel.setBluetoothEnabled(newValue);
-                      if (newValue == true && settingsModel.bluetoothDeviceId == "Unknown") { // show available devices
+                      if (newValue == true && settingsModel.bluetoothDeviceId == "Unknown") {
+                        // show available devices
                         Navigator.pushNamed(context, "/selectBluetoothDevice");
                       }
                     },
@@ -80,7 +81,6 @@ class SettingsScreen extends StatelessWidget {
           )));
 }
 
-
 /// Show status message - or devices
 class SelectBluetoothDeviceScreen extends StatelessWidget {
   final TabDefinition tabDefinition;
@@ -91,32 +91,28 @@ class SelectBluetoothDeviceScreen extends StatelessWidget {
   Widget build(BuildContext context) => Consumer2<BleScanner, BleScannerState>(
         builder: (_, bleScanner, bleScannerState, __) => _DeviceList(
           scannerState: bleScannerState,
-          startScan: bleScanner.startScan,
-          stopScan: bleScanner.stopScan,
+          bleScanner: bleScanner
         ),
       );
 }
 
-
 ///
 class _DeviceList extends StatefulWidget {
   final BleScannerState scannerState;
-  final void Function(List<Uuid>, ScanMode) startScan;
-  final Future<void> Function() stopScan;
+  final BleScanner bleScanner;
 
-  const _DeviceList({required this.scannerState, required this.startScan, required this.stopScan});
+  const _DeviceList({required this.scannerState, required this.bleScanner});
 
   @override
   _DeviceListState createState() => _DeviceListState();
 }
-
 
 ///
 class _DeviceListState extends State<_DeviceList> {
   @override
   void initState() {
     super.initState();
-    _startScanning();
+    widget.bleScanner.startScan(<Uuid>[Constants.meshtasticServiceId], ScanMode.balanced);
   }
 
   @override
@@ -126,37 +122,38 @@ class _DeviceListState extends State<_DeviceList> {
     super.dispose();
   }
 
-  void _startScanning() {
-    widget.startScan(<Uuid>[Constants.meshtasticServiceId], ScanMode.balanced);
-  }
-
-  @override
-  Widget build(BuildContext context) => Consumer2<SettingsModel, BleDeviceConnector>(
-      builder: (ctx, settingsModel, bleDeviceConnector, __) => SettingsList(sections: [
-            SettingsSection(
-              title: 'Discovered devices',
-              tiles: widget.scannerState.discoveredDevices
-                  .map(
-                    (device) => SettingsTile(
-                      title: device.name + ", " + device.id,
-                      trailing: trailingWidget(device.id, settingsModel.bluetoothDeviceId),
-                      onPressed: (BuildContext context) async {
-                        await widget.stopScan();
-                        settingsModel.setBluetoothDeviceName(device.name);
-                        settingsModel.setBluetoothDeviceId(device.id);
-                        Navigator.of(context).pop();
-                      },
-                    ),
-                  )
-                  .toList(),
-            )
-          ]));
-
   Widget trailingWidget(deviceId, selectedDeviceId) {
     return (deviceId == selectedDeviceId) ? Icon(Icons.check, color: Colors.blue) : Icon(null);
   }
-}
 
+  /// list of tiles - one for each BLE device located during scan
+  List<SettingsTile> getTileList(BleScannerState bleScannerState, SettingsModel settingsModel) {
+    print("******** YOHOO: repainting. Found more devices: ${bleScannerState.discoveredDevices.toString()}");
+    return bleScannerState.discoveredDevices
+        .map(
+          (device) => SettingsTile(
+            title: device.name + ", " + device.id,
+            trailing: trailingWidget(device.id, settingsModel.bluetoothDeviceId),
+            onPressed: (BuildContext context) async {
+              await widget.bleScanner.stopScan();
+              settingsModel.setBluetoothDeviceName(device.name);
+              settingsModel.setBluetoothDeviceId(device.id);
+              Navigator.of(context).pop();
+            },
+          ),
+        )
+        .toList();
+  }
+
+  @override
+  Widget build(BuildContext context) => Consumer2<SettingsModel, BleScannerState>(
+      builder: (ctx, settingsModel, bleScannerState, __) => SettingsList(sections: [
+            SettingsSection(
+              title: 'Discovered devices',
+              tiles: getTileList(bleScannerState, settingsModel),
+            )
+          ]));
+}
 
 ///
 class BleStatusWidget extends StatelessWidget {
@@ -188,7 +185,6 @@ class BleStatusWidget extends StatelessWidget {
       );
 }
 
-
 ///
 class EditUserNameScreen extends StatelessWidget {
   final TabDefinition tabDefinition;
@@ -210,7 +206,6 @@ class EditUserNameScreen extends StatelessWidget {
                     Navigator.of(context).pop();
                   }))));
 }
-
 
 ///
 class SelectRegionScreen extends StatelessWidget {

@@ -5,6 +5,7 @@ import 'package:meshtastic_flutter/bluetooth/reactive_state.dart';
 import 'package:meta/meta.dart';
 
 
+/// Provided in a stream
 @immutable
 class BleScannerState {
   const BleScannerState({
@@ -14,6 +15,12 @@ class BleScannerState {
 
   final List<DiscoveredDevice> discoveredDevices;
   final bool scanIsInProgress;
+
+  String toString() {
+    String s = "scanIsInProgress=$scanIsInProgress, found devices: ";
+    discoveredDevices.forEach((e) { s += "MAC=: ${e.id}, "; });
+    return s;
+  }
 }
 
 
@@ -38,7 +45,7 @@ class BleScanner implements ReactiveState<BleScannerState> {
 
   ///
   void startScan(List<Uuid> serviceIds, ScanMode scanMode) {
-    _logMessage('Start BLE discovery');
+    _logMessage('BleScanner::startScan - starting BLE discovery');
 
     _devices.clear();
     _subscription?.cancel();
@@ -55,10 +62,10 @@ class BleScanner implements ReactiveState<BleScannerState> {
     _pushState();
   }
 
-
   ///
   void _pushState() {
     if (_stateStreamController.isClosed) return;
+
     _stateStreamController.add(
       BleScannerState(
         discoveredDevices: _devices,
@@ -66,7 +73,6 @@ class BleScanner implements ReactiveState<BleScannerState> {
       ),
     );
   }
-
 
   ///
   Future<void> stopScan() async {
@@ -76,12 +82,10 @@ class BleScanner implements ReactiveState<BleScannerState> {
     _pushState();
   }
 
-
   ///
   isScanInProgress() {
     return _subscription != null;
   }
-
 
   ///
   Future<void> dispose() async {

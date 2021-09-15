@@ -46,6 +46,7 @@ class BleConnectionLogic {
       required this.bleDataStreams,
       required this.dataPacketQueue,
       required this.meshDataModel}) {
+
     settingsModel.changeStream.listen(_settingsModelHandler);
     scanner.state.listen(_btScannerStateHandler);
     monitor.state.listen(_btStatusMonitorHandler);
@@ -56,7 +57,7 @@ class BleConnectionLogic {
     Timer.periodic(Duration(seconds: 5), (Timer t) {
       _periodicScan = t;
       if (dataPacketQueue.hasUnAcknowledgedToRadioPackets()) {
-        _startScan();
+        _startScanForSelectedDeviceId();
       }
     });
   }
@@ -67,7 +68,7 @@ class BleConnectionLogic {
   }
 
   /// scan for the device from settingsModel.bluetoothDeviceId
-  _startScan() {
+  _startScanForSelectedDeviceId() {
     print("BleConnectionLogic::_startScan");
 
     if (_currentBleStatus != BleStatus.ready) {
@@ -102,18 +103,19 @@ class BleConnectionLogic {
   }
 
   /// handle changes to different settings
-  _settingsModelHandler(Tuple3<String, dynamic, dynamic> c) {
-    var paramName = c.item1;
+  /// Called with tuple consisting of: Name of setting, oldValue, newValue
+  _settingsModelHandler(Tuple3<String, dynamic, dynamic> c) async {
+    var settingName = c.item1;
     var oldValue = c.item2;
     var newValue = c.item3;
-    print("BleConnectionLogic settingsModel changed (stream!) -> attribute name='${c.item1}' oldValue='${c.item2}' newValue='${c.item3}'");
+    print("BleConnectionLogic settingsModel changed (stream!) -> setting name='$settingName' oldValue='$oldValue' newValue='$newValue'");
 
-    switch (paramName) {
+    switch (settingName) {
       case 'bluetoothEnabled':
-        _settingsBluetoothEnabled(oldValue, newValue);
+        await _settingsBluetoothEnabled(oldValue, newValue);
         break;
       case 'bluetoothDeviceId':
-        _settingsBluetoothDeviceId(oldValue, newValue);
+        await _settingsBluetoothDeviceId(oldValue, newValue);
         break;
     }
   }
@@ -125,7 +127,7 @@ class BleConnectionLogic {
     }
 
     if (newValue == true) {
-      _startScan();
+      _startScanForSelectedDeviceId();
     } else if (newValue == false) {
       _stopScan();
       if (_currentConnectionState == DeviceConnectionState.connected || _currentConnectionState == DeviceConnectionState.connecting) {
@@ -150,7 +152,7 @@ class BleConnectionLogic {
     if (settingsModel.bluetoothEnabled == false) return; // ignore change to device ID if BT is disabled
     if (MeshUtils.isValidBluetoothMac(oldValue) && _currentConnectionState == DeviceConnectionState.connected) await connector.disconnect(oldValue);
     if (MeshUtils.isValidBluetoothMac(oldValue) && scanner.isScanInProgress()) await scanner.stopScan();
-    if (MeshUtils.isValidBluetoothMac(newBluetoothId)) _startScan();
+    if (MeshUtils.isValidBluetoothMac(newBluetoothId)) _startScanForSelectedDeviceId();
   }
 
   ///
@@ -194,7 +196,7 @@ class BleConnectionLogic {
       case BleStatus.unsupported:
         break;
       case BleStatus.ready:
-        _startScan();
+        _startScanForSelectedDeviceId();
         break;
     }
   }
