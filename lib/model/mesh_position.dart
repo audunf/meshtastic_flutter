@@ -10,7 +10,7 @@ class MeshPosition {
   int nodeNum;
   double latitude;
   double longitude;
-  double altitude;
+  int altitude;
   int batteryLevel;
   int timestampEpochSec;
 
@@ -38,7 +38,7 @@ class MeshPosition {
 
   static MeshPosition fromProtoBuf(int bluetoothId, int nodeNum, Position p) {
     LatLng ll = Utils.convertPositionToLatLng(p);
-    return MeshPosition(bluetoothId, nodeNum, ll.latitude, ll.longitude, (p.altitude / 10000000.0), p.batteryLevel, p.time);
+    return MeshPosition(bluetoothId, nodeNum, ll.latitude, ll.longitude, p.altitude, p.batteryLevel, p.time);
   }
 }
 

@@ -136,6 +136,7 @@ void main() async {
       Provider.value(value: _logger),
       Provider.value(value: _scanner),
       Provider.value(value: _bleDataStreams),
+      Provider.value(value: _bleConnectionLogic),
       StreamProvider<BleStatus>(
         create: (_) => _monitor.state,
         initialData: BleStatus.unknown,
@@ -251,7 +252,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin<HomeP
             _hide.forward();
             break;
           case ScrollDirection.reverse:
-            _hide.reverse();
+            //_hide.reverse(); // TODO: Can hide the nav-bar on scrolling down (more space). But doesn't play well with listview (ends hiding icons forever). Skip for now. Fancy UI is not for now
+            _hide.forward();
             break;
           case ScrollDirection.idle:
             break;

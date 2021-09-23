@@ -87,6 +87,11 @@ String convertBluetoothAddressToString(int addr) {
   return s;
 }
 
+/// return true if time right NOW is larger than epochMS + duration
+bool isTimeNowAfterEpochMsPlusDuration(int epochMs, Duration d) {
+  DateTime timeout = DateTime.fromMillisecondsSinceEpoch(epochMs).add(d).toUtc();
+  return DateTime.now().toUtc().isAfter(timeout);
+}
 
 /// Convert FromRadio.whichPayloadVariant() to integer
 int fromRadioPayloadVariantToInteger(FromRadio x) {

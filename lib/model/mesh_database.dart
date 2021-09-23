@@ -80,7 +80,7 @@ class MeshDatabase {
               node_num             INTEGER NOT NULL,
               latitude             REAL NOT NULL,
               longitude            REAL NOT NULL,
-              altitude             REAL NOT NULL,
+              altitude             INTEGER NOT NULL,
               battery_level        INTEGER NOT NULL, 
               timestamp_epoch_sec  INTEGER NOT NULL,      
               PRIMARY KEY (bluetooth_id, node_num)

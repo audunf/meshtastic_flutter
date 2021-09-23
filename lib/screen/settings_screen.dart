@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:meshtastic_flutter/bluetooth/ble_connection_logic.dart';
 import 'package:meshtastic_flutter/bluetooth/ble_device_connector.dart';
 import 'package:meshtastic_flutter/constants.dart' as Constants;
 import 'package:meshtastic_flutter/model/mesh_data_model.dart';
@@ -88,10 +89,11 @@ class SelectBluetoothDeviceScreen extends StatelessWidget {
   const SelectBluetoothDeviceScreen({Key? key, required this.tabDefinition}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) => Consumer2<BleScanner, BleScannerState>(
-        builder: (_, bleScanner, bleScannerState, __) => _DeviceList(
+  Widget build(BuildContext context) => Consumer3<BleScanner, BleScannerState, BleConnectionLogic>(
+        builder: (_, bleScanner, bleScannerState, bleConnectionLogic, __) => _DeviceList(
           scannerState: bleScannerState,
-          bleScanner: bleScanner
+          bleScanner: bleScanner,
+          bleConnectionLogic: bleConnectionLogic
         ),
       );
 }
@@ -100,8 +102,9 @@ class SelectBluetoothDeviceScreen extends StatelessWidget {
 class _DeviceList extends StatefulWidget {
   final BleScannerState scannerState;
   final BleScanner bleScanner;
+  final BleConnectionLogic bleConnectionLogic;
 
-  const _DeviceList({required this.scannerState, required this.bleScanner});
+  const _DeviceList({required this.scannerState, required this.bleScanner, required this.bleConnectionLogic});
 
   @override
   _DeviceListState createState() => _DeviceListState();
@@ -112,13 +115,14 @@ class _DeviceListState extends State<_DeviceList> {
   @override
   void initState() {
     super.initState();
+    widget.bleConnectionLogic.setConnectionMode(BleConnectionLogicMode.scanOnly); // disable connection - only scan until a device has been selected (connecting interrupts scan)
     widget.bleScanner.startScan(<Uuid>[Constants.meshtasticServiceId], ScanMode.balanced);
   }
 
   @override
   void dispose() {
-    // Don't call widget.stopScan(); here - because it will terminate the legitimate scanning for the selected device
-    // and if no ID is selected, it won't scan anyway
+    widget.bleScanner.stopScan();
+    widget.bleConnectionLogic.setConnectionMode(BleConnectionLogicMode.canConnect);
     super.dispose();
   }
 
@@ -128,7 +132,6 @@ class _DeviceListState extends State<_DeviceList> {
 
   /// list of tiles - one for each BLE device located during scan
   List<SettingsTile> getTileList(BleScannerState bleScannerState, SettingsModel settingsModel) {
-    print("******** YOHOO: repainting. Found more devices: ${bleScannerState.discoveredDevices.toString()}");
     return bleScannerState.discoveredDevices
         .map(
           (device) => SettingsTile(

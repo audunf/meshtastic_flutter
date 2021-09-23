@@ -21,6 +21,11 @@ import 'ble_status_monitor.dart';
 import 'package:meshtastic_flutter/constants.dart' as Constants;
 import 'package:meshtastic_flutter/mesh_utilities.dart' as MeshUtils;
 
+enum BleConnectionLogicMode {
+  scanOnly, // only scan - no connections are allowed
+  canConnect
+}
+
 class BleConnectionLogic {
   BleScanner scanner;
   BleStatusMonitor monitor;
@@ -35,6 +40,8 @@ class BleConnectionLogic {
   DeviceConnectionState _currentConnectionState = DeviceConnectionState.disconnected;
 
   Timer? _periodicScan;
+  BleConnectionLogicMode _bleConnectionLogicMode = BleConnectionLogicMode.canConnect;
+  int _previousNodeConnectEpochMs = 0; //
 
   /// ctor
   BleConnectionLogic(
@@ -46,7 +53,6 @@ class BleConnectionLogic {
       required this.bleDataStreams,
       required this.dataPacketQueue,
       required this.meshDataModel}) {
-
     settingsModel.changeStream.listen(_settingsModelHandler);
     scanner.state.listen(_btScannerStateHandler);
     monitor.state.listen(_btStatusMonitorHandler);
@@ -54,10 +60,20 @@ class BleConnectionLogic {
     bleDataStreams.fromRadioStream.listen(_fromRadioHandler);
 
     // periodic function which checks the command queue. If there are commands, then scan, which might lead to connect, which sends the packets
-    Timer.periodic(Duration(seconds: 5), (Timer t) {
+    Timer.periodic(Duration(seconds: 5
+    ), (Timer t) {
+      print("timer triggered state=$_bleConnectionLogicMode");
       _periodicScan = t;
-      if (dataPacketQueue.hasUnAcknowledgedToRadioPackets()) {
+      if (_bleConnectionLogicMode != BleConnectionLogicMode.canConnect) return; // bail out if not allowed to connect
+
+      // try to connect whenever there are packets, if app never connected, or every once in a while regardless - to receive packets
+      bool hasPackets = dataPacketQueue.hasUnAcknowledgedToRadioPackets();
+      bool noPreviousConnect = _previousNodeConnectEpochMs == 0;
+      bool dueForConnect = MeshUtils.isTimeNowAfterEpochMsPlusDuration(_previousNodeConnectEpochMs, const Duration(seconds: 60));
+      print("hasPacket=$hasPackets, noPreviousConnect=$noPreviousConnect, dueForConnect=$dueForConnect");
+      if (hasPackets || noPreviousConnect || dueForConnect) {
         _startScanForSelectedDeviceId();
+        return;
       }
     });
   }
@@ -67,28 +83,37 @@ class BleConnectionLogic {
     _periodicScan?.cancel();
   }
 
+  void setConnectionMode(BleConnectionLogicMode m) {
+    _bleConnectionLogicMode = m;
+    if (_bleConnectionLogicMode == BleConnectionLogicMode.scanOnly) {
+      if (_currentConnectionState == DeviceConnectionState.connected || _currentConnectionState == DeviceConnectionState.connecting) {
+        connector.disconnect(settingsModel.bluetoothDeviceId);
+      }
+    } else if (_bleConnectionLogicMode == BleConnectionLogicMode.canConnect) {}
+  }
+
   /// scan for the device from settingsModel.bluetoothDeviceId
   _startScanForSelectedDeviceId() {
-    print("BleConnectionLogic::_startScan");
+    print("BleConnectionLogic::_startScanForSelectedDeviceId");
 
     if (_currentBleStatus != BleStatus.ready) {
-      print("BleConnectionLogic::_startScan - _currentBleStatus: $_currentBleStatus - can't scan");
+      print("BleConnectionLogic::_startScanForSelectedDeviceId - _currentBleStatus: $_currentBleStatus - can't scan");
       return;
     }
     if (settingsModel.bluetoothEnabled == false) {
-      print("BleConnectionLogic::_startScan - bluetoothEnabled setting = false");
-      return;
-    }
-    if (!MeshUtils.isValidBluetoothMac(settingsModel.bluetoothDeviceId)) {
-      print("BleConnectionLogic::_startScan - bluetoothDeviceId not valid ${settingsModel.bluetoothDeviceId}");
+      print("BleConnectionLogic::_startScanForSelectedDeviceId - bluetoothEnabled setting = false");
       return;
     }
     if (scanner.isScanInProgress()) {
-      print("BleConnectionLogic::_startScan -> scan already in progress -> do nothing");
+      print("BleConnectionLogic::_startScanForSelectedDeviceId -> scan already in progress -> do nothing");
+      return;
+    }
+    if (!MeshUtils.isValidBluetoothMac(settingsModel.bluetoothDeviceId)) {
+      print("BleConnectionLogic::_startScanForSelectedDeviceId - bluetoothDeviceId not valid ${settingsModel.bluetoothDeviceId}");
       return;
     }
 
-    print("BleConnectionLogic::_startScan -> starting scan");
+    print("BleConnectionLogic::_startScanForSelectedDeviceId -> starting scan");
     scanner.startScan(<Uuid>[Constants.meshtasticServiceId], ScanMode.lowPower);
   }
 
@@ -126,9 +151,7 @@ class BleConnectionLogic {
       return;
     }
 
-    if (newValue == true) {
-      _startScanForSelectedDeviceId();
-    } else if (newValue == false) {
+    if (newValue == false) {
       _stopScan();
       if (_currentConnectionState == DeviceConnectionState.connected || _currentConnectionState == DeviceConnectionState.connecting) {
         connector.disconnect(settingsModel.bluetoothDeviceId);
@@ -142,28 +165,34 @@ class BleConnectionLogic {
 
     // On new BT deviceId, dump old data, and read any known data for new ID
     bool btIdChanged = await dataPacketQueue.setBluetoothIdFromString(newBluetoothId);
-    if (btIdChanged) {       // ID changed
+    if (btIdChanged) {
+      // ID changed
       print("_settingsBluetoothDeviceId oldBtId=$oldValue newBluetoothId=$newBluetoothId -> triggering save, purge, load, and playback or radio commands");
+
+      if (settingsModel.bluetoothEnabled == true && MeshUtils.isValidBluetoothMac(oldValue) && _currentConnectionState == DeviceConnectionState.connected) {
+        await connector.disconnect(oldValue);
+      }
+
       await meshDataModel.save();
       meshDataModel.clearModel();
       await meshDataModel.load(MeshUtils.convertBluetoothAddressToInt(newBluetoothId));
-    }
 
-    if (settingsModel.bluetoothEnabled == false) return; // ignore change to device ID if BT is disabled
-    if (MeshUtils.isValidBluetoothMac(oldValue) && _currentConnectionState == DeviceConnectionState.connected) await connector.disconnect(oldValue);
-    if (MeshUtils.isValidBluetoothMac(oldValue) && scanner.isScanInProgress()) await scanner.stopScan();
-    if (MeshUtils.isValidBluetoothMac(newBluetoothId)) _startScanForSelectedDeviceId();
+      _previousNodeConnectEpochMs = 0; // pretend no previous connection to the node - to trigger a sync
+    }
   }
 
   ///
   _btScannerStateHandler(BleScannerState s) async {
     if (s.scanIsInProgress == false) {
-      return; // this happens as a result of "stopScan". Store status, then ignore it
+      return; // this happens as a result of "stopScan". Ignore it
     }
 
     if (s.discoveredDevices.isEmpty) {
       return;
     }
+
+    // state says we can't connect, then bail out
+    if (_bleConnectionLogicMode != BleConnectionLogicMode.canConnect) return;
 
     // check whether discovered device contains selected BT deviceId -> connect
     var i = s.discoveredDevices.iterator;
@@ -196,7 +225,6 @@ class BleConnectionLogic {
       case BleStatus.unsupported:
         break;
       case BleStatus.ready:
-        _startScanForSelectedDeviceId();
         break;
     }
   }
@@ -209,6 +237,8 @@ class BleConnectionLogic {
 
     if (s.connectionState == DeviceConnectionState.connected) {
       /// CONNECTED
+      _previousNodeConnectEpochMs = DateTime.now().millisecondsSinceEpoch; // set time of connection
+
       await bleDataStreams.connectDataStreams(s.deviceId); // on new connection, initialize data streams
       await _sendWantConfig(s.deviceId);
       await _sendToRadioCommandQueue(); // send all other pending commands
@@ -251,18 +281,6 @@ class BleConnectionLogic {
 
     // wantConfig is special - we don't add the ToRadio packet to the command queue
     await bleDataStreams.writeAndReadResponseUntilEmpty(deviceId, pkt);
-
-    //RadioCommandQueue.instance.addToRadio(MeshUtils.convertBluetoothAddressToInt(deviceId), pkt);
-    //_sendRadioCommandQueue();
-
-    // 5. Disconnect when command queue is empty.
-    // 6. Scan for device. If it comes online, then always connect, even if the ToRadio queue is empty. Disconnect after 5 seconds or so.
-
-    //await bleDataStreams.writeAndReadResponseUntilEmpty(deviceId, pkt);
-    // TODO: this doesn't work... might not be the right thing to do... - it doesn't work
-    //print("radioConfigRequest with deviceId=" + deviceId);
-    //pkt = MakeToRadio.radioConfigRequest();
-    //await bleDataStreams.writeAndReadResponseUntilEmpty(deviceId, pkt);
   }
 
   /// Handle incoming FromRadio packets

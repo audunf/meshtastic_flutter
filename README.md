@@ -1,5 +1,5 @@
 # meshtastic_flutter
-Should it be names "Mutter"? Meshtastic Flutter. "Mutter" being "to talk in a quiet voice that 
+Should it be named "Mutter" - Meshtastic flUTTER? "Mutter" being "to talk in a quiet voice that 
 is difficult to hear, especially because you are annoyed or embarrassed, or are talking to yourself".
 
 Routes and keeping the app bar/bottom nav bar:
@@ -15,49 +15,39 @@ There are different data models.
 3. SettingsModel - settings for the app itself. 
 
 # TODO 
-- when selecting device from the config screen, it looks like new devices found aren't added to the list of available devices
-  The stream is now OK. But code is very eager to connect. And that likely blocks or cancels scanning while in the list/scan for devices screen. 
-  Need to somehow disable connections while in the selection screen. And ensure that nobody tries to connect while scanning. 
-- also looks like we're connecting/disconnecting too much when attempting to select a new device. Not sure why that happens.
+- stop doing the endless BT scan. Just jump straight to connection what that's required. Only scan when looking for new devices from Settings.  
 - how do we get an ACK from the radio when a packet has been sent? 
-
 
 TODO list:
 - Chat screen.
-  Icon per message showing status - each message might get an icon similar to the one in the main status bar? Needs some research.
-  Add the sender/recipient in the message. 
+  Icon per message showing status - each message might get an icon similar to the one in the main status bar? Needs some research. Look at Android app. 
+  Add the sender/recipient in the message. Small font.
+  Not quite sure how it would work with multiple channels active? Should it be possible to chose channel name on top-left, where it just says 'Chat' right now?
 - Improve the "People" screen. 
   Needs an icon for status of other nodes. 
   Battery of every node.
   Distance in meters?
+  Time since last visible
 - Settings screen
   Setting Region and writing it to the device
+  Select channel options (long-slow, etc.). Set channel name.
 - Channel setup screen. With QR code. How does this work?  
-- Mesh status icon to go in the application title-bar. Need to do some research on how it works.  
+- Mesh status icon in the application title-bar. How will this work? Need to do some research on how the Android app does it.   
 
 - Bluetooth
-  Buffer actions to perform (like, messages to send, channel settings, etc.)
-  When device is available, check which actions are in the buffer. Execute them all.
-  Auto-disconnect when done with actions
-  Every X minutes, scan, check if device is there. If it isn't for a really long time, then mark it as offline/down.
+  There's a lot to do. 
+  Avoid scanning all the time.
+  Buffer more commands
+  Can app know roughly when device will be awake the next time and only try to connect then? 
+  Check all the stuff related to the BT notification channel (unread count and reading until done)
+  Currently we only read packets until no packets are returned (empty). I don't think that's right. 
 
-Chat:
-  Not quite sure how it works with multiple channels active?
-  Displays message, cloud icon, date/time, text
-People:
-  Display name, battery, time since node last visible, GPS coordinates
-Map:
-  Display map with name and distance. Can probably use a marker here? For the actual position?
-Channel config:
-  Select channel options (long-slow, etc.)
-  Set channel name.
+Larger questions: 
+- Handling channels. Encryption. There's nothing on this.
+  Allow sharing of channel settings
   Display the QR code with channel/encryption settings.
   Allow sharing of channel settings
   Interpret channel settings
-Settings tab:
-  Set "Your name" - DONE
-  Region - DONE
-
 
 ## Channel settings QR code
 https://meshtastic.org/docs/developers/protobufs/api#channel
@@ -83,7 +73,6 @@ https://github.com/meshtastic/Meshtastic-Android/blob/479f242e066a77c1a789b2ae02
 ## Future ideas
 * While not connected: Scan in 'opportunistic' mode. Connect if there is a scan result which matches the selected BT device ID 
 
-
 # State handling
 Overview of options: https://flutter.dev/docs/development/data-and-backend/state-mgmt/options
 
@@ -92,7 +81,6 @@ Example: https://github.com/flutter/samples/blob/master/provider_counter/lib/mai
 
 https://pub.dev/documentation/provider/latest/provider/ValueListenableProvider-class.html
 
-
 # Protobuf
 * Flutter protobufs: https://xinyitao.tech/2019/01/12/Using-Protobuf-In-Flutter/ - https://www.andrew.cmu.edu/user/xinyit/2019/01/12/Using-Protobuf-In-Flutter/
 
@@ -100,7 +88,6 @@ To generate all:
 meshtastic_flutter$ protoc --proto_path=./Meshtastic-protobufs --dart_out=lib/proto-autogen ./Meshtastic-protobufs/*.proto
 
 https://github.com/meshtastic/Meshtastic-Android/blob/479f242e066a77c1a789b2ae0265f1743f662b43/app/src/main/java/com/geeksville/mesh/service/BluetoothInterface.kt
-
 
 # Bluetooth lib selection
 Selected the following Bluetooth lib for Flutter: https://github.com/PhilipsHue/flutter_reactive_ble
@@ -111,8 +98,7 @@ Selected the following Bluetooth lib for Flutter: https://github.com/PhilipsHue/
     * This issue mentions that: https://github.com/PhilipsHue/flutter_reactive_ble - is maintained by the team doing PhilipsHue - which might mean it's actively maintained
 * Flutter BLE lib https://github.com/Polidea/FlutterBleLib
   * Not sure it's maintained
-    
-
+  
 # Meshtastic and Bluetooth
 Meshtastic Bluetooth API: https://meshtastic.org/docs/developers/device/device-api
 * UUID for the service: 6ba1b218-15a8-461f-9fa8-5dcae273eafd
@@ -207,28 +193,3 @@ F/JabraSDK(26455): Initializing logger LIBJABRA_TRACE_LEVEL: FATAL
 D/BluetoothGatt( 4119): onClientConnectionState() - status=19 clientIf=13 device=08:3A:F2:44:BB:0A
 D/BluetoothGatt( 4119): close()
 D/BluetoothGatt( 4119): unregisterApp() - mClientIf=13
-
-
-------------
-After adding a custom channel called xyzzy to both, and sending two text messages (they appear as ^local)
-
-Bubble(
--                  alignment: Alignment.center,
--                  color: Colors.deepPurple,
--                  borderColor: Colors.black12,
--                  borderWidth: 2,
--                  margin: const BubbleEdges.only(top: 8),
--                  child: const Text(
--                    'TODAY',
--                    style: TextStyle(fontSize: 10),
--                  ),
--                ),
-
--                Bubble(
--                  style: styleSomebody,
--                  child: const Text(
--                    "I've been having a problem with my computer.",
--                    style: TextStyle(fontSize: 16),
--                  ),
--                ),
--              ]))
