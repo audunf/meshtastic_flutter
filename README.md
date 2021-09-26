@@ -33,9 +33,13 @@ There are different data models.
 
 The notification/triggers used to propagate changes are a bit complicated. Perhaps more than they should be. 
 
-# TODO 
-- stop doing the endless BT scan. Just jump straight to connection what that's required. Only scan when looking for new devices from Settings.  
+# TODO
+- GOT data on readNotifyWriteCharacteristicId [41, 0, 0, 0] - I believe it's not reading until the end of the list
+- check whether displayed time in the messages are from the actual message or reception time
+- it might be that we're using seconds epoch to calc checksum on outgoing. Perhaps internal representation should be milliseconds, and convert to seconds on send
+  the current packet # in the message waiting inside fromradio, if the phone sees this notify it should read messages until it catches up with this number.
 - how do we get an ACK from the radio when a packet has been sent? 
+- remember devices connected in the past and show those in the list of available
 
 TODO list:
 - Chat screen.
@@ -49,7 +53,7 @@ TODO list:
   Time since last visible
 - Settings screen
   Setting Region and writing it to the device
-  Select channel options (long-slow, etc.). Set channel name.
+  Everything related to channels. Select channel options (long-slow, etc.). Set channel name.
 - Channel setup screen. With QR code. How does this work?  
 - Mesh status icon in the application title-bar. How will this work? Need to do some research on how the Android app does it.   
 
@@ -92,7 +96,8 @@ and then can't talk because their PSKs will be different. The PSK is hashed into
 the users COULD type in a channel name and be able to talk. Y is a lower case letter from a-z that represents the channel 
 'speed' settings (for some future definition of speed)
 
-FIXME: Add description of multi-channel support and how primary vs secondary channels are used. FIXME: explain how apps use channels for security. explain how remote settings and remote gpio are managed as an example
+FIXME: Add description of multi-channel support and how primary vs secondary channels are used. 
+FIXME: explain how apps use channels for security. explain how remote settings and remote gpio are managed as an example
 
 Code: 
 https://github.com/meshtastic/Meshtastic-Android/blob/041a04afc15710f2963621a2344376f1b444a0ff/app/src/main/java/com/geeksville/mesh/model/ChannelSet.kt

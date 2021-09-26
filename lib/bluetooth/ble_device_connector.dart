@@ -22,15 +22,27 @@ class BleDeviceConnector extends ReactiveState<ConnectionStateUpdate> {
     //_logMessage("BleDeviceConnector::ctor");
   }
 
+  /// is there already a connection?
+  bool isConnected() {
+    if (_connection != null && _currentConnectedDeviceId.length > 0) {
+      return true;
+    }
+    return false;
+  }
+
   Future<void> connect(String deviceId) async {
-    _logMessage('Start connecting to $deviceId');
+    _logMessage('BleDeviceConnector::connect $deviceId');
+    if (deviceId == _currentConnectedDeviceId) {
+      print("BleDeviceConnector::connect - already connected to $deviceId");
+      return;
+    }
 
     // Search for specific services
     Map<Uuid, List<Uuid>> servicesWithCharacteristics = new Map();
     servicesWithCharacteristics[Constants.meshtasticServiceId] = <Uuid>[Constants.readFromRadioCharacteristicId, Constants.writeToRadioCharacteristicId];
 
     // if there is an active connection -> disconnect before attempting to connect
-    if (_connection != null && _currentConnectedDeviceId.length > 0) {
+    if (isConnected()) {
       await disconnect(_currentConnectedDeviceId);
     }
 

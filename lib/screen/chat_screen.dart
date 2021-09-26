@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_keyboard_visibility/flutter_keyboard_visibility.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
 import 'package:meshtastic_flutter/model/mesh_data_packet_queue.dart';
@@ -34,6 +35,12 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void initState() {
     super.initState();
+
+    var keyboardVisibilityController = KeyboardVisibilityController();
+    keyboardVisibilityController.onChange.listen((bool visible) {
+      print('Keyboard visibility update. Is visible: $visible');
+      scrollToEnd();
+    });
   }
 
   @override
@@ -78,7 +85,7 @@ class _ChatScreenState extends State<ChatScreen> {
   void scrollToEnd() {
     // wait some time, then scroll to end
     Timer(
-        Duration(milliseconds: 200),
+        Duration(milliseconds: 300),
         () => _scrollController.animateTo(
               _scrollController.position.maxScrollExtent,
               duration: Duration(milliseconds: 200),
@@ -133,28 +140,32 @@ class _ChatScreenState extends State<ChatScreen> {
                   Row(children: [
                     Expanded(
                         child: IntrinsicHeight(
-                            child: TextFormField(
-                      controller: _chatEditCtrl,
-                      keyboardType: TextInputType.multiline,
-                      style: TextStyle(fontSize: 18),
-                      maxLines: null,
-                      // If the maxLines property is null, there is no limit to the number of lines, and the wrap is enabled.
-                      minLines: null,
-                      expands: true,
-                      decoration: InputDecoration(
-                        border: OutlineInputBorder(),
-                        labelText: 'Enter message',
-                        labelStyle: TextStyle(fontSize: 18, color: Colors.grey),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(5.0),
-                          borderSide: BorderSide(
-                            color: Colors.white70,
-                            width: 1.0,
-                          ),
-                        ),
-                      ),
-                      onFieldSubmitted: (String value) {},
-                    ))),
+                            child: Focus(
+                                onFocusChange: (bool focus) {
+                                  if (focus) scrollToEnd();
+                                },
+                                child: TextFormField(
+                                  controller: _chatEditCtrl,
+                                  keyboardType: TextInputType.multiline,
+                                  style: TextStyle(fontSize: 18),
+                                  maxLines: null,
+                                  // If the maxLines property is null, there is no limit to the number of lines, and the wrap is enabled.
+                                  minLines: null,
+                                  expands: true,
+                                  decoration: InputDecoration(
+                                    border: OutlineInputBorder(),
+                                    labelText: 'Enter message',
+                                    labelStyle: TextStyle(fontSize: 18, color: Colors.grey),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(5.0),
+                                      borderSide: BorderSide(
+                                        color: Colors.white70,
+                                        width: 1.0,
+                                      ),
+                                    ),
+                                  ),
+                                  onFieldSubmitted: (String value) {},
+                                )))),
                     Padding(
                         padding: EdgeInsets.fromLTRB(5, 0, 0, 0), // add some space to the text input box
                         child: ClipRRect(

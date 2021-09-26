@@ -72,7 +72,7 @@ class BleConnectionLogic {
       bool dueForConnect = MeshUtils.isTimeNowAfterEpochMsPlusDuration(_previousNodeConnectEpochMs, const Duration(seconds: 60));
       print("hasPacket=$hasPackets, noPreviousConnect=$noPreviousConnect, dueForConnect=$dueForConnect");
       if (hasPackets || noPreviousConnect || dueForConnect) {
-        _startScanForSelectedDeviceId();
+        _connect();
         return;
       }
     });
@@ -92,39 +92,26 @@ class BleConnectionLogic {
     } else if (_bleConnectionLogicMode == BleConnectionLogicMode.canConnect) {}
   }
 
-  /// scan for the device from settingsModel.bluetoothDeviceId
-  _startScanForSelectedDeviceId() {
-    print("BleConnectionLogic::_startScanForSelectedDeviceId");
+  /// Connect to device from settingsModel.bluetoothDeviceId
+  _connect() {
+    print("BleConnectionLogic::_connect");
 
-    if (_currentBleStatus != BleStatus.ready) {
-      print("BleConnectionLogic::_startScanForSelectedDeviceId - _currentBleStatus: $_currentBleStatus - can't scan");
-      return;
-    }
-    if (settingsModel.bluetoothEnabled == false) {
-      print("BleConnectionLogic::_startScanForSelectedDeviceId - bluetoothEnabled setting = false");
-      return;
-    }
-    if (scanner.isScanInProgress()) {
-      print("BleConnectionLogic::_startScanForSelectedDeviceId -> scan already in progress -> do nothing");
-      return;
-    }
     if (!MeshUtils.isValidBluetoothMac(settingsModel.bluetoothDeviceId)) {
-      print("BleConnectionLogic::_startScanForSelectedDeviceId - bluetoothDeviceId not valid ${settingsModel.bluetoothDeviceId}");
+      print("BleConnectionLogic::_connect - bluetoothDeviceId not valid ${settingsModel.bluetoothDeviceId}");
+      return;
+    } else if (_currentBleStatus != BleStatus.ready) {
+      print("BleConnectionLogic::_connect - _currentBleStatus: $_currentBleStatus - can't connect");
+      return;
+    } else if (settingsModel.bluetoothEnabled == false) {
+      print("BleConnectionLogic::_connect - bluetoothEnabled setting = false");
+      return;
+    } else if (connector.isConnected()) {
+      print("BleConnectionLogic::_connect -> already connected");
       return;
     }
 
-    print("BleConnectionLogic::_startScanForSelectedDeviceId -> starting scan");
-    scanner.startScan(<Uuid>[Constants.meshtasticServiceId], ScanMode.lowPower);
-  }
-
-  ///
-  _stopScan() async {
-    if (!scanner.isScanInProgress()) {
-      print("BleConnectionLogic::_stopScan -> no scan in progress -> return");
-      return;
-    }
-    print("BleConnectionLogic::_stopScan!");
-    await scanner.stopScan();
+    print("BleConnectionLogic::_connect - connecting!");
+    connector.connect(settingsModel.bluetoothDeviceId);
   }
 
   /// handle changes to different settings
@@ -146,15 +133,16 @@ class BleConnectionLogic {
   }
 
   /// handle enable/disable BT in settings
-  _settingsBluetoothEnabled(oldValue, newValue) {
+  _settingsBluetoothEnabled(oldValue, newValue) async {
     if (!settingsModel.isBluetoothDeviceIdValidMac()) {
       return;
     }
 
     if (newValue == false) {
-      _stopScan();
       if (_currentConnectionState == DeviceConnectionState.connected || _currentConnectionState == DeviceConnectionState.connecting) {
-        connector.disconnect(settingsModel.bluetoothDeviceId);
+        await connector.disconnect(settingsModel.bluetoothDeviceId);
+      } else if (scanner.isScanInProgress()){
+        await scanner.stopScan();
       }
     }
   }
@@ -202,7 +190,7 @@ class BleConnectionLogic {
 
       print("BleConnectionLogic::_btScannerStateHandler - found the selected deviceId=${d.id} -> connect!");
       if (scanner.isScanInProgress()) {
-        await _stopScan(); // this triggers one last event where 'scanIsInProgress' is false
+        await scanner.stopScan(); // this triggers one last event where 'scanIsInProgress' is false
       }
       await connector.connect(d.id);
       break; // stop the search early
