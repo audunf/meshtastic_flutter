@@ -83,7 +83,7 @@ String convertBluetoothAddressToString(int addr) {
   Iterable<Match> matches = exp.allMatches(h);
   var list = matches.map((m) => m.group(0));
   var s = list.join(":");
-  print("convertBluetoothAddressToString $s");
+  // print("convertBluetoothAddressToString $s");
   return s;
 }
 
@@ -101,4 +101,38 @@ int fromRadioPayloadVariantToInteger(FromRadio x) {
 /// Convert ToRadio.whichPayloadVariant() to integer
 int toRadioPayloadVariantToInteger(ToRadio x) {
   return x.whichPayloadVariant().index; // This might break the DB if new enum values are introduced at the start of definition in protobuf-land
+}
+
+/// keep calling 'action'. Do incremental backoff if 'action' returns false. Reset backoff if 'action' returns true
+/// Terminate the function when the 'action' function calls the 'doneFunc' supplied to it
+/// On backoff, multiply 'retryMS' with 'backoffPercent'. Revert to original 'retryMS' when 'action' returns true.
+/// Never wait more than 'maxBackoffMS' between retries
+incrementalBackoff(int retryMS, double backoffPercent, int maxBackoffMS, {required Future<bool> Function(Function(dynamic) doneCallback) action}) async {
+  if (backoffPercent <= 0.00000 || backoffPercent >= 1.0) throw Exception("backoffPercent must be > 0 and < 1");
+  int currentBackoffMS = 0;
+  int backoffCount = 0;
+  bool doBackoff = false;
+  bool isDone = false;
+  var functionResult = false;
+
+  doneCallbackFunc(dynamic result) {
+    isDone = true;
+    functionResult = result;
+  }
+
+  while (!isDone) {
+    doBackoff = !await action(doneCallbackFunc);
+    if (doBackoff) {
+      currentBackoffMS = (backoffCount.toDouble() * retryMS.toDouble() * backoffPercent).toInt();
+      if (currentBackoffMS > maxBackoffMS) currentBackoffMS = maxBackoffMS;
+      ++backoffCount;
+    } else {
+      currentBackoffMS = 0;
+      backoffCount = 0;
+    }
+    if (currentBackoffMS > 0) {
+      await Future.delayed(Duration(milliseconds: currentBackoffMS));
+    }
+  }
+  return functionResult;
 }

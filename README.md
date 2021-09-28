@@ -34,8 +34,27 @@ There are different data models.
 The notification/triggers used to propagate changes are a bit complicated. Perhaps more than they should be. 
 
 # TODO
-- GOT data on readNotifyWriteCharacteristicId [41, 0, 0, 0] - I believe it's not reading until the end of the list
+I/flutter (11225): ** handleMeshPacket
+I/flutter (11225): *** handleRoutingPortNum: errorReason: MAX_RETRANSMIT
+I/flutter (11225): _addRadioCommandBack - has this package already. Discarding duplicate {bluetooth_id: 9049265715966, direction: 1, payload_variant: 5, checksum: 1140863185, packet_id: 1413827953, from_node_num: 4064590588, to_node_num: 4064590588, channel: 0, rx_time_epoch_sec: 1632781943, rx_snr: 0.0, hop_limit: 0, want_ack: 0, priority: 120, rx_rssi: 0, acknowledged: 0, payload: [90, 35, 13, 252, 186, 68, 242, 21, 252, 186, 68, 242, 34, 11, 8, 5, 18, 2, 24, 5, 53, 19, 0, 0, 0, 53, 113, 77, 69, 84, 61, 119, 70, 82, 97, 96, 120]}
+
+The ack required to mark packages sent is: 
+I/flutter (19689): ** handleMeshPacket from: 4064590588
+I/flutter (19689): to: 4064590588
+I/flutter (19689): decoded: {
+I/flutter (19689):   portnum: ROUTING_APP
+I/flutter (19689):   payload: [24, 0]
+I/flutter (19689):   requestId: 11
+I/flutter (19689): }
+I/flutter (19689): id: 555109731
+I/flutter (19689): rxTime: 1632864178
+I/flutter (19689): priority: ACK
+I/flutter (19689): *** handleRoutingPortNum: errorReason: NONE
+I/flutter (19689):  -> errorReason NONE
+
+- when getting new packet, and already connected, send immediately. 
 - check whether displayed time in the messages are from the actual message or reception time
+- Getting "duplicate/discard" on sending many msg fast. Same checksum. Why?  
 - it might be that we're using seconds epoch to calc checksum on outgoing. Perhaps internal representation should be milliseconds, and convert to seconds on send
   the current packet # in the message waiting inside fromradio, if the phone sees this notify it should read messages until it catches up with this number.
 - how do we get an ACK from the radio when a packet has been sent? 

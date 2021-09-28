@@ -75,7 +75,7 @@ class AppFromRadioHandler {
   }
 
   _handleMeshPacket(MeshPacket mp) {
-    print("** handleMeshPacket ");
+    print("** handleMeshPacket " + mp.toDebugString());
 
     // mp.from
     // mp.to
@@ -196,7 +196,21 @@ I/flutter (19407): time: 1629368767
 
   _handleRoutingPortNum(buf) {
     Routing r = Routing.fromBuffer(buf);
-    print("*** handleRoutingPortNum: " + r.toString());
+    print("*** handleRoutingPortNum: " + r.toDebugString());
+    switch(r.whichVariant()) {
+      case Routing_Variant.routeReply:
+        print(" -> routeReply - The list of nodenums this packet has visited so far " + r.routeReply.route.toString());
+        break;
+      case Routing_Variant.routeRequest:
+        print(" -> routeRequest - The list of nodenums this packet has visited so far " + r.routeRequest.route.toString());
+        break;
+      case Routing_Variant.errorReason:
+        print(" -> errorReason " + r.errorReason.toString());
+        break;
+      case Routing_Variant.notSet:
+        print(" -> notSet");
+        break;
+    }
     return r;
   }
 

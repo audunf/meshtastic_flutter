@@ -43,6 +43,7 @@ class BleDeviceConnector extends ReactiveState<ConnectionStateUpdate> {
 
     // if there is an active connection -> disconnect before attempting to connect
     if (isConnected()) {
+      print("BleDeviceConnector::connect - already connected - disconnect from _currentConnectedDeviceId=$_currentConnectedDeviceId, connect to $deviceId");
       await disconnect(_currentConnectedDeviceId);
     }
 
@@ -57,6 +58,7 @@ class BleDeviceConnector extends ReactiveState<ConnectionStateUpdate> {
       (conState) async {
         _logMessage('ConnectionState for device $deviceId : ${conState.connectionState}');
         if (conState.connectionState == DeviceConnectionState.connected) {
+          _currentConnectedDeviceId = deviceId;
           await _ble.requestMtu(deviceId: deviceId, mtu: 500);
         }
         _deviceConnectionController.add(conState);

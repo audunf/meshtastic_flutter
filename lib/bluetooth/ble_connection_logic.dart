@@ -41,7 +41,6 @@ class BleConnectionLogic {
 
   Timer? _periodicScan;
   BleConnectionLogicMode _bleConnectionLogicMode = BleConnectionLogicMode.canConnect;
-  int _previousNodeConnectEpochMs = 0; //
 
   /// ctor
   BleConnectionLogic(
@@ -58,22 +57,35 @@ class BleConnectionLogic {
     monitor.state.listen(_btStatusMonitorHandler);
     connector.state.listen(_btConnectionUpdateHandler);
     bleDataStreams.fromRadioStream.listen(_fromRadioHandler);
+    bleDataStreams.packetNumberAvailableStream.listen(_packetNumberAvailableHandler);
 
     // periodic function which checks the command queue. If there are commands, then scan, which might lead to connect, which sends the packets
     Timer.periodic(Duration(seconds: 5
-    ), (Timer t) {
-      print("timer triggered state=$_bleConnectionLogicMode");
+    ), (Timer t) async {
+      print("timer triggered state=$_bleConnectionLogicMode isConnected=${connector.isConnected()}");
       _periodicScan = t;
-      if (_bleConnectionLogicMode != BleConnectionLogicMode.canConnect) return; // bail out if not allowed to connect
 
-      // try to connect whenever there are packets, if app never connected, or every once in a while regardless - to receive packets
-      bool hasPackets = dataPacketQueue.hasUnAcknowledgedToRadioPackets();
-      bool noPreviousConnect = _previousNodeConnectEpochMs == 0;
-      bool dueForConnect = MeshUtils.isTimeNowAfterEpochMsPlusDuration(_previousNodeConnectEpochMs, const Duration(seconds: 60));
-      print("hasPacket=$hasPackets, noPreviousConnect=$noPreviousConnect, dueForConnect=$dueForConnect");
-      if (hasPackets || noPreviousConnect || dueForConnect) {
-        _connect();
-        return;
+      if (connector.isConnected()) {
+        // if connected, and no activity for 10 seconds, then disconnect
+        bool dueForDisconnect = MeshUtils.isTimeNowAfterEpochMsPlusDuration(bleDataStreams.lastActivityTimestamp, const Duration(seconds: 10));
+        if (dueForDisconnect) {
+          print("disconnect due");
+          await connector.disconnect(settingsModel.bluetoothDeviceId);
+        } else {
+          print("disconnect NOT due");
+        }
+      } else {
+        if (_bleConnectionLogicMode != BleConnectionLogicMode.canConnect) return; // bail out if not allowed to connect
+
+        // try to connect whenever there are packets, if app never connected, or every once in a while regardless - to receive packets
+        bool hasPackets = dataPacketQueue.hasUnAcknowledgedToRadioPackets();
+        bool noPreviousConnect = bleDataStreams.lastActivityTimestamp == 0;
+        bool dueForConnect = MeshUtils.isTimeNowAfterEpochMsPlusDuration(bleDataStreams.lastActivityTimestamp, const Duration(seconds: 60));
+        print("hasPacket=$hasPackets, noPreviousConnect=$noPreviousConnect, dueForConnect=$dueForConnect");
+        if (hasPackets || noPreviousConnect || dueForConnect) {
+          await _connect();
+          return;
+        }
       }
     });
   }
@@ -87,31 +99,35 @@ class BleConnectionLogic {
     _bleConnectionLogicMode = m;
     if (_bleConnectionLogicMode == BleConnectionLogicMode.scanOnly) {
       if (_currentConnectionState == DeviceConnectionState.connected || _currentConnectionState == DeviceConnectionState.connecting) {
+        print("setConnectionMode - disconnect");
         connector.disconnect(settingsModel.bluetoothDeviceId);
       }
     } else if (_bleConnectionLogicMode == BleConnectionLogicMode.canConnect) {}
   }
 
   /// Connect to device from settingsModel.bluetoothDeviceId
-  _connect() {
+  _connect() async {
     print("BleConnectionLogic::_connect");
 
-    if (!MeshUtils.isValidBluetoothMac(settingsModel.bluetoothDeviceId)) {
-      print("BleConnectionLogic::_connect - bluetoothDeviceId not valid ${settingsModel.bluetoothDeviceId}");
-      return;
-    } else if (_currentBleStatus != BleStatus.ready) {
+    if (_currentBleStatus != BleStatus.ready) {
       print("BleConnectionLogic::_connect - _currentBleStatus: $_currentBleStatus - can't connect");
-      return;
-    } else if (settingsModel.bluetoothEnabled == false) {
-      print("BleConnectionLogic::_connect - bluetoothEnabled setting = false");
       return;
     } else if (connector.isConnected()) {
       print("BleConnectionLogic::_connect -> already connected");
       return;
+    } else if (_bleConnectionLogicMode != BleConnectionLogicMode.canConnect) {
+      print("BleConnectionLogic::_connect - _currentConnectionState != BleConnectionLogicMode.canConnect");
+      return;
+    } else if (!MeshUtils.isValidBluetoothMac(settingsModel.bluetoothDeviceId)) {
+      print("BleConnectionLogic::_connect - bluetoothDeviceId not valid ${settingsModel.bluetoothDeviceId}");
+      return;
+    } else if (settingsModel.bluetoothEnabled == false) {
+      print("BleConnectionLogic::_connect - bluetoothEnabled setting = false");
+      return;
     }
 
     print("BleConnectionLogic::_connect - connecting!");
-    connector.connect(settingsModel.bluetoothDeviceId);
+    await connector.connect(settingsModel.bluetoothDeviceId);
   }
 
   /// handle changes to different settings
@@ -140,6 +156,7 @@ class BleConnectionLogic {
 
     if (newValue == false) {
       if (_currentConnectionState == DeviceConnectionState.connected || _currentConnectionState == DeviceConnectionState.connecting) {
+        print("BT disabled while active connection - disconnect");
         await connector.disconnect(settingsModel.bluetoothDeviceId);
       } else if (scanner.isScanInProgress()){
         await scanner.stopScan();
@@ -158,6 +175,7 @@ class BleConnectionLogic {
       print("_settingsBluetoothDeviceId oldBtId=$oldValue newBluetoothId=$newBluetoothId -> triggering save, purge, load, and playback or radio commands");
 
       if (settingsModel.bluetoothEnabled == true && MeshUtils.isValidBluetoothMac(oldValue) && _currentConnectionState == DeviceConnectionState.connected) {
+        print("BT device id changed while active connection - disconnect old ID=$oldValue");
         await connector.disconnect(oldValue);
       }
 
@@ -165,7 +183,7 @@ class BleConnectionLogic {
       meshDataModel.clearModel();
       await meshDataModel.load(MeshUtils.convertBluetoothAddressToInt(newBluetoothId));
 
-      _previousNodeConnectEpochMs = 0; // pretend no previous connection to the node - to trigger a sync
+      bleDataStreams.lastActivityTimestamp = 0; // pretend no previous connection to the node - to trigger a sync
     }
   }
 
@@ -197,6 +215,12 @@ class BleConnectionLogic {
     }
   }
 
+  /// got message to read until a specific packet number
+  _packetNumberAvailableHandler(int packetNumberAvailable) async {
+    if (!connector.isConnected()) await _connect();
+    await bleDataStreams.readResponseUntilPacketNumber(settingsModel.bluetoothDeviceId, packetNumberAvailable);
+  }
+
   /// called whenever BLE status changes
   _btStatusMonitorHandler(BleStatus s) {
     _currentBleStatus = s;
@@ -225,15 +249,9 @@ class BleConnectionLogic {
 
     if (s.connectionState == DeviceConnectionState.connected) {
       /// CONNECTED
-      _previousNodeConnectEpochMs = DateTime.now().millisecondsSinceEpoch; // set time of connection
-
       await bleDataStreams.connectDataStreams(s.deviceId); // on new connection, initialize data streams
       await _sendWantConfig(s.deviceId);
       await _sendToRadioCommandQueue(); // send all other pending commands
-
-      Future.delayed(const Duration(milliseconds: 5000), () async {
-        await connector.disconnect(s.deviceId); // disconnect after a delay
-      });
     } else if (s.connectionState == DeviceConnectionState.disconnected) {
       /// DISCONNECTED
       dataPacketQueue.save(); // save command queues and whatever radio state on disconnect
